@@ -30,7 +30,7 @@ namespace FPLAssistant.Repositories
 
             int randomId = random.Next(1, 701);
 
-            string generalInfoUrl = "bootstrap-static";
+            string generalInfoUrl = "https://fantasy.premierleague.com/api/bootstrap-static";
 
             try
             {
@@ -48,7 +48,7 @@ namespace FPLAssistant.Repositories
                 return null;
             }
 
-            string playerUrl = $"element-summary/{randomId}/";
+            string playerUrl = $"https://fantasy.premierleague.com/api/element-summary/{randomId}/";
 
             try
             {

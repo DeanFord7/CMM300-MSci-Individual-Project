@@ -1,7 +1,8 @@
 ﻿@page "/"
 @inject FPLRepository _fplRepository
+@inject PythonRepository _pythonRepository
 
-<h1>FPL Assitant</h1>
+<h1>FPL Assistant</h1>
 
 <MudButton OnClick="GetPlayerData">Get Player Data</MudButton>
 
@@ -14,9 +15,17 @@
     <MudText>Cost: @FormatCost(activePlayerData.Cost)</MudText>
 }
 
+<MudButton OnClick="QueryPythonBackend">Send Message to Python</MudButton>
+
+@if (message != null)
+{
+    <MudText>@message</MudText>
+}
+
 
 @code {
     PlayerData activePlayerData;
+    string message;
 
     public async Task<bool> GetPlayerData()
     {
@@ -36,5 +45,18 @@
         double decimalCost = (double)cost / 10;
 
         return $"£{decimalCost}m";
+    }
+
+    public async Task<bool> QueryPythonBackend()
+    {
+        string responseMessage = await _pythonRepository.SendMessage();
+
+        if (responseMessage != null)
+        {
+            message = responseMessage;
+            await InvokeAsync(StateHasChanged);
+            return true;
+        }
+        return false;
     }
 }

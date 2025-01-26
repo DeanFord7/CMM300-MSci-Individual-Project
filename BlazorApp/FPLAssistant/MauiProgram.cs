@@ -16,8 +16,9 @@ namespace FPLAssistant
                 });
 
             builder.Services.AddMauiBlazorWebView();
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://fantasy.premierleague.com/api/") });
+            builder.Services.AddScoped(sp => new HttpClient());
             builder.Services.AddScoped<FPLRepository>();
+            builder.Services.AddScoped<PythonRepository>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
