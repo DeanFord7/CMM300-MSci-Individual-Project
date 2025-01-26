@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using FPLAssistant.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace FPLAssistant
 {
@@ -15,9 +16,11 @@ namespace FPLAssistant
                 });
 
             builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://fantasy.premierleague.com/api/") });
+            builder.Services.AddScoped<FPLRepository>();
 
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
 

@@ -1,5 +1,40 @@
 ﻿@page "/"
+@inject FPLRepository _fplRepository
 
-<h1>Hello, world!</h1>
+<h1>FPL Assitant</h1>
 
-Welcome to your new app.
+<MudButton OnClick="GetPlayerData">Get Player Data</MudButton>
+
+@if (activePlayerData != null)
+{
+    <MudText>Player Name: @activePlayerData.FirstName @activePlayerData.LastName</MudText>
+    <MudText>Goals: @activePlayerData.Goals</MudText>
+    <MudText>Assists: @activePlayerData.Assists</MudText>
+    <MudText>Points: @activePlayerData.TotalPoints</MudText>
+    <MudText>Cost: @FormatCost(activePlayerData.Cost)</MudText>
+}
+
+
+@code {
+    PlayerData activePlayerData;
+
+    public async Task<bool> GetPlayerData()
+    {
+        PlayerData playerData = await _fplRepository.GetPlayerData();
+
+        if (playerData != null)
+        {
+            activePlayerData = playerData;
+            await InvokeAsync(StateHasChanged);
+            return true;
+        } 
+        return false;
+    }
+
+    public string FormatCost(int cost)
+    {
+        double decimalCost = (double)cost / 10;
+
+        return $"£{decimalCost}m";
+    }
+}
