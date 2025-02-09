@@ -3,6 +3,10 @@
     "Windows Machine": {
       "commandName": "MsixPackage",
       "nativeDebugging": false
+    },
+    "Profile 1": {
+      "commandName": "Project",
+      "workingDirectory": "C:\\Users\\Skint\\Documents\\Year 5 Computer Science\\CMM300\\Project\\DeanFord-CMM300-Project\\FPLAssistant\\BlazorApp\\FPLAssistant"
     }
   }
 }

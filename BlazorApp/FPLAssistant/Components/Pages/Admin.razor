@@ -1,0 +1,16 @@
+﻿@page "/admin"
+@inject FPLRepository _fplRepository
+@inject PythonRepository _pythonRepository
+
+<h1>Admin</h1>
+
+<MudButton OnClick="GeneratePlayerDataCSV">Populate CSV</MudButton>
+
+@code {
+    public async Task<bool> GeneratePlayerDataCSV()
+    {
+        bool success = await _fplRepository.GeneratePlayerDataCSV();
+
+        return success;
+    }
+}

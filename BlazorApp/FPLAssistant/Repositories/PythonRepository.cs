@@ -13,11 +13,13 @@ namespace FPLAssistant.Repositories
     public interface IPythonRepository
     {
         Task<string> SendMessage();
+        Task<bool> GenerateCsv(List<History> fixtureHistory);
     }
 
     public class PythonRepository : IPythonRepository
     {
         private readonly HttpClient _httpClient;
+        private string flaskUrl = "http://127.0.0.1:5000/";
         public PythonRepository(HttpClient httpClient) 
         { 
             _httpClient = httpClient;
@@ -25,8 +27,6 @@ namespace FPLAssistant.Repositories
 
         public async Task<string> SendMessage()
         {
-            string flaskUrl = "http://127.0.0.1:5000/";
-
             try
             {
                 var response = await _httpClient.GetAsync(flaskUrl);
@@ -39,6 +39,28 @@ namespace FPLAssistant.Repositories
             {
                 Console.WriteLine(ex.Message);
                 return null;
+            }
+        }
+
+        public async Task<bool> GenerateCsv(List<History> fixtureHistory)
+        {
+            var url = flaskUrl + "create_csv";
+
+            var jsonContent = new StringContent(JsonSerializer.Serialize(fixtureHistory), Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, jsonContent);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(result);
+
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Error: " + response.StatusCode);
+                return false;
             }
         }
     }
