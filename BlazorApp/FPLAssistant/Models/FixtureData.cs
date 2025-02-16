@@ -91,40 +91,40 @@ namespace FPLAssistant.Models
         public int? Minutes { get; set; }
 
         [JsonPropertyName("goals_scored")]
-        public int? GoalsScored { get; set; }
+        public double? GoalsScored { get; set; }
 
         [JsonPropertyName("assists")]
-        public int? Assists { get; set; }
+        public double? Assists { get; set; }
 
         [JsonPropertyName("clean_sheets")]
-        public int? CleanSheets { get; set; }
+        public double? CleanSheets { get; set; }
 
         [JsonPropertyName("goals_conceded")]
-        public int? GoalsConceded { get; set; }
+        public double? GoalsConceded { get; set; }
 
         [JsonPropertyName("own_goals")]
-        public int? OwnGoals { get; set; }
+        public double? OwnGoals { get; set; }
 
         [JsonPropertyName("penalties_saved")]
-        public int? PenaltiesSaved { get; set; }
+        public double? PenaltiesSaved { get; set; }
 
         [JsonPropertyName("penalties_missed")]
-        public int? PenaltiesMissed { get; set; }
+        public double? PenaltiesMissed { get; set; }
 
         [JsonPropertyName("yellow_cards")]
-        public int? YellowCards { get; set; }
+        public double? YellowCards { get; set; }
 
         [JsonPropertyName("red_cards")]
-        public int? RedCards { get; set; }
+        public double? RedCards { get; set; }
 
         [JsonPropertyName("saves")]
-        public int? Saves { get; set; }
+        public double? Saves { get; set; }
 
         [JsonPropertyName("bonus")]
-        public int? Bonus { get; set; }
+        public double? Bonus { get; set; }
 
         [JsonPropertyName("bps")]
-        public int? BonusPoints { get; set; }
+        public double? BonusPoints { get; set; }
 
         [JsonPropertyName("influence")]
         public string Influence { get; set; }

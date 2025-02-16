@@ -21,8 +21,6 @@
     <MudButton OnClick="@(async () => await GetPredictionForPlayer(activePlayerData))">Predict Score</MudButton>
 }
 
-<MudButton OnClick="QueryPythonBackend">Send Message to Python</MudButton>
-
 @if (message != null)
 {
     <MudText>@message</MudText>

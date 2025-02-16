@@ -1,5 +1,8 @@
-﻿using FPLAssistant.Repositories;
+﻿using FPLAssistant.Components.Dialog;
+using FPLAssistant.Repositories;
 using Microsoft.Extensions.Logging;
+using MudBlazor;
+using MudBlazor.Services;
 
 namespace FPLAssistant
 {
@@ -16,9 +19,13 @@ namespace FPLAssistant
                 });
 
             builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddMudServices();
             builder.Services.AddScoped(sp => new HttpClient());
             builder.Services.AddScoped<FPLRepository>();
             builder.Services.AddScoped<PythonRepository>();
+            builder.Services.AddScoped<DialogService>();
+
+
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

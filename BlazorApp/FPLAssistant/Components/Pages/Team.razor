@@ -1,0 +1,31 @@
+﻿@page "/team"
+@inject FPLRepository _fplRepository
+@inject PythonRepository _pythonRepository
+@inject IDialogService DialogService
+
+
+<h1>Team</h1>
+
+<MudButton OnClick="OpenPlayerSearch" Variant="Variant.Outlined" Color="Color.Primary">
+    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Large"></MudIcon> Add Player
+</MudButton>
+
+@code {
+    private PlayerData _playerData = new PlayerData();
+    public async Task OpenPlayerSearch()
+    {
+        var options = new DialogOptions
+            {
+                MaxWidth = MaxWidth.Large,
+                BackdropClick = true
+            };
+
+        var parameters = new DialogParameters
+            {
+                ["Value"] = _playerData
+            };
+
+        var dialog = await DialogService.ShowAsync<PlayerDialog>("Search Player", parameters, options);
+
+    }
+}

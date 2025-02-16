@@ -19,6 +19,7 @@ namespace FPLAssistant.Repositories
         Task<FixtureData> GetPlayerFixtureData(int playerId);
         Task<int?> GetPredictionForPlayer(int playerId);
         Task<History> GetPlayerAverages(FixtureData playerFixtureData);
+        Task<List<PlayerData>> GetAllPlayers();
     }
 
     public class FPLRepository : IFPLRepository
@@ -211,18 +212,18 @@ namespace FPLAssistant.Repositories
 
                 // Compute averages
                 Minutes = (int)history.Average(h => h.Minutes),
-                GoalsScored = (int)history.Average(h => h.GoalsScored),
-                Assists = (int)history.Average(h => h.Assists),
-                CleanSheets = (int)history.Average(h => h.CleanSheets),
-                GoalsConceded = (int)history.Average(h => h.GoalsConceded),
-                OwnGoals = (int)history.Average(h => h.OwnGoals),
-                PenaltiesSaved = (int)history.Average(h => h.PenaltiesSaved),
-                PenaltiesMissed = (int)history.Average(h => h.PenaltiesMissed),
-                YellowCards = (int)history.Average(h => h.YellowCards),
-                RedCards = (int)history.Average(h => h.RedCards),
-                Saves = (int)history.Average(h => h.Saves),
-                Bonus = (int)history.Average(h => h.Bonus),
-                BonusPoints = (int)history.Average(h => h.BonusPoints),
+                GoalsScored = (double)history.Average(h => h.GoalsScored),
+                Assists = (double)history.Average(h => h.Assists),
+                CleanSheets = (double)history.Average(h => h.CleanSheets),
+                GoalsConceded = (double)history.Average(h => h.GoalsConceded),
+                OwnGoals = (double)history.Average(h => h.OwnGoals),
+                PenaltiesSaved = (double)history.Average(h => h.PenaltiesSaved),
+                PenaltiesMissed = (double)history.Average(h => h.PenaltiesMissed),
+                YellowCards = (double)history.Average(h => h.YellowCards),
+                RedCards = (double)history.Average(h => h.RedCards),
+                Saves = (double)history.Average(h => h.Saves),
+                Bonus = (double)history.Average(h => h.Bonus),
+                BonusPoints = (double)history.Average(h => h.BonusPoints),
 
                 // Advanced stats
                 Influence = history.Average(h => double.TryParse(h.Influence, out var x) ? x : 0).ToString("0.00"),
@@ -234,6 +235,13 @@ namespace FPLAssistant.Repositories
                 ExpectedGoalInvolvements = history.Average(h => double.TryParse(h.ExpectedGoalInvolvements, out var x) ? x : 0).ToString("0.00"),
                 ExpectedGoalsConceded = history.Average(h => double.TryParse(h.ExpectedGoalsConceded, out var x) ? x : 0).ToString("0.00"),
             };
+        }
+
+        public async Task<List<PlayerData>> GetAllPlayers()
+        {
+            BootStrapAPIResponse bootStrapAPIResponse = await GetBootStrapAPIResponse();
+
+            return bootStrapAPIResponse.Elements;
         }
     }
 }

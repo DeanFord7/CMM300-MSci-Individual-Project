@@ -1,0 +1,44 @@
+﻿@inject FPLRepository _fplRepository
+
+<MudDialog>
+    <DialogContent>
+        <h3>Player</h3>
+
+        <MudTextField Label="Search Player" @bind-Value="_searchText" Immediate="true"></MudTextField>
+        <MudList T="PlayerData">
+            @foreach (var player in _filteredPlayers)
+            {
+                <MudListItem Clicked="() => SelectPlayer(player)">
+                    @player.FirstName @player.LastName
+                </MudListItem>
+            }
+        </MudList>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public PlayerData Value { get; set; }
+
+    private string _searchText = "";
+    private List<PlayerData> allPlayers = new();
+    private List<PlayerData> _filteredPlayers => allPlayers
+        .Where(p => p.FirstName.ToLower().Contains(_searchText.ToLower()) || p.LastName.ToLower().Contains(_searchText.ToLower()))
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load players from API
+        allPlayers = await _fplRepository.GetAllPlayers();
+    }
+
+    private void SelectPlayer(PlayerData player)
+    {
+        // Logic to select player from the list (you may update the Value or call a callback here)
+        Value = player;
+        // Optionally close the dialog after selecting the player
+        // MudDialog.Close(DialogResult.Ok(player));
+    }
+}
