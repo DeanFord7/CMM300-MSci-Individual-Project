@@ -9,10 +9,16 @@
 @if (activePlayerData != null)
 {
     <MudText>Player Name: @activePlayerData.FirstName @activePlayerData.LastName</MudText>
+    <MudText>Position: @GetPlayerPosition(activePlayerData)</MudText>
     <MudText>Goals: @activePlayerData.Goals</MudText>
     <MudText>Assists: @activePlayerData.Assists</MudText>
     <MudText>Points: @activePlayerData.TotalPoints</MudText>
     <MudText>Cost: @FormatCost(activePlayerData.Cost)</MudText>
+    @if (predictedScore != null)
+    {
+        <MudText>Predicted Score: @predictedScore Point(s)</MudText>
+    }
+    <MudButton OnClick="@(async () => await GetPredictionForPlayer(activePlayerData))">Predict Score</MudButton>
 }
 
 <MudButton OnClick="QueryPythonBackend">Send Message to Python</MudButton>
@@ -26,9 +32,11 @@
 @code {
     PlayerData activePlayerData;
     string message;
+    int? predictedScore;
 
     public async Task<bool> GetPlayerData()
     {
+        predictedScore = null;
         PlayerData playerData = await _fplRepository.GetPlayerData();
 
         if (playerData != null)
@@ -59,4 +67,34 @@
         }
         return false;
     }
+
+    public string GetPlayerPosition(PlayerData playerData)
+    {
+        switch (playerData.Position)
+        {
+            case 1:
+                return "Goalkeeper";
+            case 2:
+                return "Defender";
+            case 3:
+                return "Midfielder";
+            case 4:
+                return "Attacker";
+            default:
+                return "Position not Found";
+        }
+    }
+
+    public async Task<bool> GetPredictionForPlayer(PlayerData activePlayerData)
+    {
+        if (activePlayerData != null)
+        {
+            predictedScore = await _fplRepository.GetPredictionForPlayer(activePlayerData.Id);
+
+            return true;
+        }
+
+        return false;
+    }
+
 }

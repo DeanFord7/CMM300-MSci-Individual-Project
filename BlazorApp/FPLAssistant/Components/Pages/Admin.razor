@@ -5,11 +5,20 @@
 <h1>Admin</h1>
 
 <MudButton OnClick="GeneratePlayerDataCSV">Populate CSV</MudButton>
+<MudButton OnClick="TrainModel">Train Model</MudButton>
+
 
 @code {
     public async Task<bool> GeneratePlayerDataCSV()
     {
         bool success = await _fplRepository.GeneratePlayerDataCSV();
+
+        return success;
+    }
+
+    public async Task<bool> TrainModel()
+    {
+        bool success = await _pythonRepository.TrainModel();
 
         return success;
     }

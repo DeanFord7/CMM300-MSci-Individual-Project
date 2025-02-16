@@ -16,7 +16,9 @@ namespace FPLAssistant.Repositories
         Task<BootStrapAPIResponse> GetBootStrapAPIResponse();
         Task<PlayerData> GetPlayerData();
         Task<bool> GeneratePlayerDataCSV();
-        Task<List<History>> GetPlayerFixtureData(int playerId);
+        Task<FixtureData> GetPlayerFixtureData(int playerId);
+        Task<int?> GetPredictionForPlayer(int playerId);
+        Task<History> GetPlayerAverages(FixtureData playerFixtureData);
     }
 
     public class FPLRepository : IFPLRepository
@@ -88,9 +90,16 @@ namespace FPLAssistant.Repositories
 
                 foreach (var player in bootStrapAPIResponse.Elements)
                 {
-                    List<History> playerFixtureData = await GetPlayerFixtureData(player.Id);
+                    FixtureData playerFixtureData = await GetPlayerFixtureData(player.Id);
 
-                    fullFixtureHistory.AddRange(playerFixtureData);
+                    List<History> playerHistory = playerFixtureData.History;
+
+                    foreach (var history in playerHistory)
+                    {
+                        history.Position = player.Position;
+                    }
+
+                    fullFixtureHistory.AddRange(playerHistory);
                 }
 
                 bool result = await _pythonRepository.GenerateCsv(fullFixtureHistory);
@@ -104,7 +113,7 @@ namespace FPLAssistant.Repositories
             return true;
         }
 
-        public async Task<List<History>> GetPlayerFixtureData(int playerId)
+        public async Task<FixtureData> GetPlayerFixtureData(int playerId)
         {
             try
             {
@@ -123,13 +132,108 @@ namespace FPLAssistant.Repositories
                     Console.WriteLine($"Deserialization error: {ex.Message}");
                 }
 
-                return playerFixtureData.History;
+                return playerFixtureData;
             }
             catch (HttpRequestException e)
             {
                 Console.WriteLine(e.Message);
                 return null;
             }
+        }
+
+        public async Task<int?> GetPredictionForPlayer(int playerId)
+        {
+            FixtureData playerFixtureData = await GetPlayerFixtureData(playerId);
+
+            if (playerFixtureData != null)
+            {
+                History averagedHistory = await GetPlayerAverages(playerFixtureData);
+
+                if (averagedHistory != null)
+                {
+                    BootStrapAPIResponse bootStrapAPIResponse = await GetBootStrapAPIResponse();
+
+                    PlayerData playerData = bootStrapAPIResponse.Elements.Where(i => i.Id == playerId).FirstOrDefault();
+
+                    averagedHistory.Position = playerData.Position;
+
+                    int? predictedScore = await _pythonRepository.PredictPlayerScore(averagedHistory);
+
+                    return predictedScore;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Use past fixture history to get averages for the player to be used in the prediction
+        /// </summary>
+        /// <param name="playerFixtureData"></param>
+        /// <returns></returns>
+        public async Task<History> GetPlayerAverages(FixtureData playerFixtureData)
+        {
+            var history = playerFixtureData.History;
+
+            if (history == null || history.Count == 0)
+            {
+                // No history available, return default values
+                return new History
+                {
+                    PlayerId = 0,
+                    Fixture = playerFixtureData.Fixtures.FirstOrDefault()?.Id ?? 0,
+                    OpponentTeam = playerFixtureData.Fixtures.FirstOrDefault()?.TeamAway ?? 0,
+                    WasHome = playerFixtureData.Fixtures.FirstOrDefault()?.IsHome ?? true,
+                    Minutes = 0,
+                    GoalsScored = 0,
+                    Assists = 0,
+                    CleanSheets = 0,
+                    GoalsConceded = 0,
+                    YellowCards = 0,
+                    RedCards = 0,
+                    Saves = 0,
+                    ExpectedGoals = "0.0",
+                    ExpectedAssists = "0.0",
+                    ExpectedGoalInvolvements = "0.0",
+                    ExpectedGoalsConceded = "0.0"
+                };
+            }
+
+            int count = history.Count;
+
+            double goalsScored = (double)history.Average(h => h.GoalsScored);
+
+            return new History
+            {
+                PlayerId = history.First().PlayerId,  // Keep the same player ID
+                Fixture = playerFixtureData.Fixtures.FirstOrDefault()?.Id ?? 0,
+                OpponentTeam = playerFixtureData.Fixtures.FirstOrDefault()?.TeamAway ?? 0,
+                WasHome = playerFixtureData.Fixtures.FirstOrDefault()?.IsHome ?? true,
+
+                // Compute averages
+                Minutes = (int)history.Average(h => h.Minutes),
+                GoalsScored = (int)history.Average(h => h.GoalsScored),
+                Assists = (int)history.Average(h => h.Assists),
+                CleanSheets = (int)history.Average(h => h.CleanSheets),
+                GoalsConceded = (int)history.Average(h => h.GoalsConceded),
+                OwnGoals = (int)history.Average(h => h.OwnGoals),
+                PenaltiesSaved = (int)history.Average(h => h.PenaltiesSaved),
+                PenaltiesMissed = (int)history.Average(h => h.PenaltiesMissed),
+                YellowCards = (int)history.Average(h => h.YellowCards),
+                RedCards = (int)history.Average(h => h.RedCards),
+                Saves = (int)history.Average(h => h.Saves),
+                Bonus = (int)history.Average(h => h.Bonus),
+                BonusPoints = (int)history.Average(h => h.BonusPoints),
+
+                // Advanced stats
+                Influence = history.Average(h => double.TryParse(h.Influence, out var x) ? x : 0).ToString("0.00"),
+                Creativity = history.Average(h => double.TryParse(h.Creativity, out var x) ? x : 0).ToString("0.00"),
+                Threat = history.Average(h => double.TryParse(h.Threat, out var x) ? x : 0).ToString("0.00"),
+                IctIndex = history.Average(h => double.TryParse(h.IctIndex, out var x) ? x : 0).ToString("0.00"),
+                ExpectedGoals = history.Average(h => double.TryParse(h.ExpectedGoals, out var x) ? x : 0).ToString("0.00"),
+                ExpectedAssists = history.Average(h => double.TryParse(h.ExpectedAssists, out var x) ? x : 0).ToString("0.00"),
+                ExpectedGoalInvolvements = history.Average(h => double.TryParse(h.ExpectedGoalInvolvements, out var x) ? x : 0).ToString("0.00"),
+                ExpectedGoalsConceded = history.Average(h => double.TryParse(h.ExpectedGoalsConceded, out var x) ? x : 0).ToString("0.00"),
+            };
         }
     }
 }

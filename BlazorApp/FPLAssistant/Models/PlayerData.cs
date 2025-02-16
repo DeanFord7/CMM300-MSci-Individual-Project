@@ -23,5 +23,7 @@ namespace FPLAssistant.Models
         public int Assists { get; set; }
         [JsonPropertyName("now_cost")]
         public int Cost {  get; set; }
+        [JsonPropertyName("element_type")]
+        public int Position { get; set; }
     }
 }

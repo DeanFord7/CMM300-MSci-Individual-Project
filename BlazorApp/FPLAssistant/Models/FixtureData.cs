@@ -20,8 +20,49 @@ namespace FPLAssistant.Models
 
     public class Fixture
     {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
 
+        [JsonPropertyName("code")]
+        public int Code { get; set; }
+
+        [JsonPropertyName("team_h")]
+        public int TeamHome { get; set; }
+
+        [JsonPropertyName("team_h_score")]
+        public int? TeamHomeScore { get; set; }
+
+        [JsonPropertyName("team_a")]
+        public int TeamAway { get; set; }
+
+        [JsonPropertyName("team_a_score")]
+        public int? TeamAwayScore { get; set; }
+
+        [JsonPropertyName("event")]
+        public int Event { get; set; }
+
+        [JsonPropertyName("finished")]
+        public bool Finished { get; set; }
+
+        [JsonPropertyName("minutes")]
+        public int Minutes { get; set; }
+
+        [JsonPropertyName("provisional_start_time")]
+        public bool ProvisionalStartTime { get; set; }
+
+        [JsonPropertyName("kickoff_time")]
+        public string KickoffTime { get; set; }
+
+        [JsonPropertyName("event_name")]
+        public string EventName { get; set; }
+
+        [JsonPropertyName("is_home")]
+        public bool IsHome { get; set; }
+
+        [JsonPropertyName("difficulty")]
+        public int Difficulty { get; set; }
     }
+
 
     public class History
     {
@@ -45,12 +86,6 @@ namespace FPLAssistant.Models
 
         [JsonPropertyName("team_a_score")]
         public int? TeamAwayScore { get; set; }
-
-        [JsonPropertyName("round")]
-        public int? Round { get; set; }
-
-        [JsonPropertyName("modified")]
-        public bool Modified { get; set; }
 
         [JsonPropertyName("minutes")]
         public int? Minutes { get; set; }
@@ -117,6 +152,8 @@ namespace FPLAssistant.Models
 
         [JsonPropertyName("expected_goals_conceded")]
         public string ExpectedGoalsConceded { get; set; }
+        [JsonPropertyName("position")]
+        public int Position { get; set; }
     }
 
     public class PastHistory
