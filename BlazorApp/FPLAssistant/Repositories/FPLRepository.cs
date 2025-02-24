@@ -203,38 +203,125 @@ namespace FPLAssistant.Repositories
 
             double goalsScored = (double)history.Average(h => h.GoalsScored);
 
-            return new History
+            History predictedMatchHistory = new History
             {
                 PlayerId = history.First().PlayerId,  // Keep the same player ID
                 Fixture = playerFixtureData.Fixtures.FirstOrDefault()?.Id ?? 0,
                 OpponentTeam = playerFixtureData.Fixtures.FirstOrDefault()?.TeamAway ?? 0,
                 WasHome = playerFixtureData.Fixtures.FirstOrDefault()?.IsHome ?? true,
-
-                // Compute averages
-                Minutes = (int)history.Average(h => h.Minutes),
-                GoalsScored = (double)history.Average(h => h.GoalsScored),
-                Assists = (double)history.Average(h => h.Assists),
-                CleanSheets = (double)history.Average(h => h.CleanSheets),
-                GoalsConceded = (double)history.Average(h => h.GoalsConceded),
-                OwnGoals = (double)history.Average(h => h.OwnGoals),
-                PenaltiesSaved = (double)history.Average(h => h.PenaltiesSaved),
-                PenaltiesMissed = (double)history.Average(h => h.PenaltiesMissed),
-                YellowCards = (double)history.Average(h => h.YellowCards),
-                RedCards = (double)history.Average(h => h.RedCards),
-                Saves = (double)history.Average(h => h.Saves),
-                Bonus = (double)history.Average(h => h.Bonus),
-                BonusPoints = (double)history.Average(h => h.BonusPoints),
-
-                // Advanced stats
-                Influence = history.Average(h => double.TryParse(h.Influence, out var x) ? x : 0).ToString("0.00"),
-                Creativity = history.Average(h => double.TryParse(h.Creativity, out var x) ? x : 0).ToString("0.00"),
-                Threat = history.Average(h => double.TryParse(h.Threat, out var x) ? x : 0).ToString("0.00"),
-                IctIndex = history.Average(h => double.TryParse(h.IctIndex, out var x) ? x : 0).ToString("0.00"),
-                ExpectedGoals = history.Average(h => double.TryParse(h.ExpectedGoals, out var x) ? x : 0).ToString("0.00"),
-                ExpectedAssists = history.Average(h => double.TryParse(h.ExpectedAssists, out var x) ? x : 0).ToString("0.00"),
-                ExpectedGoalInvolvements = history.Average(h => double.TryParse(h.ExpectedGoalInvolvements, out var x) ? x : 0).ToString("0.00"),
-                ExpectedGoalsConceded = history.Average(h => double.TryParse(h.ExpectedGoalsConceded, out var x) ? x : 0).ToString("0.00"),
             };
+
+            double totalMinutes = 0;
+            double totalGoals = 0;
+            double totalAssists = 0;
+            double totalGoalsConceded = 0;
+            double totalOwnGoals = 0;
+            double totalPenaltiesSaved = 0;
+            double totalPenaltiesMissed = 0;
+            double totalYellowCards = 0;
+            double totalRedCards = 0;
+            double totalSaves = 0;
+            double totalBonus = 0;
+            double totalBonusPoints = 0;
+            double totalInfluence = 0;
+            double totalCreativity = 0;
+            double totalThreat = 0;
+            double totalICT = 0;
+            double totalXG = 0;
+            double totalXA = 0;
+            double totalXGI = 0;
+            double totalXGC = 0;
+
+            foreach (var item in history)
+            {
+                int index = history.IndexOf(item);
+                double.TryParse(item.Influence, out double influence);
+                double.TryParse(item.Creativity, out double creativity);
+                double.TryParse(item.Threat, out double threat);
+                double.TryParse(item.IctIndex, out double ictIndex);
+                double.TryParse(item.ExpectedGoals, out double expectedGoals);
+                double.TryParse(item.ExpectedAssists, out double expectedAssists);
+                double.TryParse(item.ExpectedGoalInvolvements, out double expectedGoalInvolvements);
+                double.TryParse(item.ExpectedGoalsConceded, out double expectedGoalsConceded);
+
+                if (index >= history.Count - 5)
+                {
+                    totalMinutes += (double)item.Minutes * 2;
+                    totalGoals += (double)item.GoalsScored * 2;
+                    totalAssists += (double)item.Assists * 2;
+                    totalGoalsConceded += (double)item.GoalsConceded * 2;
+                    totalOwnGoals += (double)item.OwnGoals * 2;
+                    totalPenaltiesSaved += (double)item.PenaltiesSaved * 2;
+                    totalPenaltiesMissed += (double)item.PenaltiesMissed * 2;
+                    totalYellowCards += (double)item.YellowCards * 2;
+                    totalRedCards += (double)item.RedCards * 2;
+                    totalSaves += (double)item.Saves * 2;
+                    totalBonus += (double)item.Bonus * 2;
+                    totalBonusPoints += (double)item.BonusPoints * 2;
+                    totalInfluence += (double)influence * 2;
+                    totalCreativity += (double)creativity * 2;
+                    totalThreat += (double)threat * 2;
+                    totalICT += (double)ictIndex * 2;
+                    totalXG += (double)expectedGoals * 2;
+                    totalXA += (double)expectedAssists * 2;
+                    totalXGI += (double)expectedGoalInvolvements * 2;
+                    totalXGC += (double)expectedGoalsConceded * 2;
+                }
+                else
+                {
+                    totalMinutes += (double)item.Minutes;
+                    totalGoals += (double)item.GoalsScored;
+                    totalAssists += (double)item.Assists;
+                    totalGoalsConceded += (double)item.GoalsConceded;
+                    totalOwnGoals += (double)item.OwnGoals;
+                    totalPenaltiesSaved += (double)item.PenaltiesSaved;
+                    totalPenaltiesMissed += (double)item.PenaltiesMissed;
+                    totalYellowCards += (double)item.YellowCards;
+                    totalRedCards += (double)item.RedCards;
+                    totalSaves += (double)item.Saves;
+                    totalBonus += (double)item.Bonus;
+                    totalBonusPoints += (double)item.BonusPoints;
+                    totalInfluence += (double)influence;
+                    totalCreativity += (double)creativity;
+                    totalThreat += (double)threat;
+                    totalICT += (double)ictIndex;
+                    totalXG += (double)expectedGoals;
+                    totalXA += (double)expectedAssists;
+                    totalXGI += (double)expectedGoalInvolvements;
+                    totalXGC += (double)expectedGoalsConceded;
+                }
+            }
+
+            int totalMatches = history.Count;
+            if (totalMinutes / totalMinutes > 90)
+            {
+                predictedMatchHistory.Minutes = 90;
+            }
+            else
+            {
+                predictedMatchHistory.Minutes = (int)(totalMinutes / totalMatches);
+            }
+            predictedMatchHistory.GoalsScored = totalGoals / totalMatches;
+            predictedMatchHistory.Assists = totalAssists / totalMatches;
+            predictedMatchHistory.GoalsConceded = totalGoalsConceded / totalMatches;
+            predictedMatchHistory.OwnGoals = totalOwnGoals / totalMatches;
+            predictedMatchHistory.PenaltiesSaved = totalPenaltiesSaved / totalMatches;
+            predictedMatchHistory.PenaltiesMissed = totalPenaltiesMissed / totalMatches;
+            predictedMatchHistory.YellowCards = totalYellowCards / totalMatches;
+            predictedMatchHistory.RedCards = totalRedCards / totalMatches;
+            predictedMatchHistory.Saves = totalSaves / totalMatches;
+            predictedMatchHistory.Bonus = totalBonus / totalMatches;
+            predictedMatchHistory.BonusPoints = totalBonusPoints / totalMatches;
+            predictedMatchHistory.Influence = (totalInfluence / totalMatches).ToString("0.0");
+            predictedMatchHistory.Creativity = (totalCreativity / totalMatches).ToString("0.0");
+            predictedMatchHistory.Threat = (totalThreat / totalMatches).ToString("0.0");
+            predictedMatchHistory.IctIndex = (totalICT / totalMatches).ToString("0.0");
+            predictedMatchHistory.ExpectedGoals = (totalXG / totalMatches).ToString("0.0");
+            predictedMatchHistory.ExpectedAssists = (totalXA / totalMatches).ToString("0.0");
+            predictedMatchHistory.ExpectedGoalInvolvements = (totalXGI / totalMatches).ToString("0.0");
+            predictedMatchHistory.ExpectedGoalsConceded = (totalXGC / totalMatches).ToString("0.0");
+
+            return predictedMatchHistory;
         }
 
         public async Task<List<PlayerData>> GetAllPlayers()
