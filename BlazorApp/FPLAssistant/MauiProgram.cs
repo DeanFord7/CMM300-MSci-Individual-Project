@@ -3,6 +3,8 @@ using FPLAssistant.Repositories;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
 using MudBlazor.Services;
+using Blazored.LocalStorage;
+using FPLAssistant.Services;
 
 namespace FPLAssistant
 {
@@ -24,7 +26,8 @@ namespace FPLAssistant
             builder.Services.AddScoped<FPLRepository>();
             builder.Services.AddScoped<PythonRepository>();
             builder.Services.AddScoped<DialogService>();
-
+            builder.Services.AddBlazoredLocalStorage();
+            builder.Services.AddScoped<TeamStateService>();
 
 
 #if DEBUG

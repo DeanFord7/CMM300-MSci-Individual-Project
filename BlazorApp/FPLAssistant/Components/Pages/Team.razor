@@ -1,31 +1,220 @@
-﻿@page "/team"
+﻿@page "/"
 @inject FPLRepository _fplRepository
 @inject PythonRepository _pythonRepository
-@inject IDialogService DialogService
+@inject TeamStateService _teamStateService
 
+@if (!_loading)
+{
+    <div class="formation">
+        <div class="row">
+            @foreach (PlayerData goalkeeper in _goalKeepers)
+            {
+                @if (goalkeeper.Index < 11)
+                {
+                    <PlayerChoice PlayerData="goalkeeper" Index="goalkeeper.Index" Position="1" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed"></PlayerChoice>
+                }
+            }
+            @if (_goalKeepers.Count < 2 && !_goalKeepers.Any(i => i.Index == 0) && _players.Count < 15)
+            {
+                <PlayerChoice PlayerData="new PlayerData()" Index="0" Position="1" OnPlayerSelected="HandlePlayerSelected"></PlayerChoice>
+            }
+        </div>
+        <div class="row">
+            @foreach (PlayerData defender in _defenders)
+            {
+                @if (defender.Index <= 11)
+                {
+                    <PlayerChoice PlayerData="defender" Index="defender.Index" Position="2" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed"></PlayerChoice>
+                }
+            }
+            @for (int i = 1; i < 5; i++)
+            {
+                @if (!_defenders.Any(d => d.Index == i) && _players.Count < 15)
+                {
+                    <div class="player-select">
+                        <PlayerChoice PlayerData="new PlayerData()" Index="i" Position="2" OnPlayerSelected="HandlePlayerSelected"></PlayerChoice>
+                    </div>
+                }
+            }
+        </div>
+        <div class="row">
+            @foreach (PlayerData midfielder in _midfielders)
+            {
+                @if (midfielder.Index <= 11)
+                {
+                    <PlayerChoice PlayerData="midfielder" Index="midfielder.Index" Position="3" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed"></PlayerChoice>
+                }
+            }
+            @for (int i = 5; i < 9; i++)
+            {
+                @if (!_midfielders.Any(d => d.Index == i) && _players.Count < 15)
+                {
+                    <div class="player-select">
+                        <PlayerChoice PlayerData="new PlayerData()" Index="i" Position="3" OnPlayerSelected="HandlePlayerSelected"></PlayerChoice>
+                    </div>
+                }
+            }
+        </div>
+        <div class="row">
+            @foreach (PlayerData attacker in _attackers)
+            {
+                @if (attacker.Index <= 11)
+                {
+                    <PlayerChoice PlayerData="attacker" Index="attacker.Index" Position="4" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed"></PlayerChoice>
+                }
+            }
+            @for (int i = 9; i < 11; i++)
+            {
+                @if (!_attackers.Any(d => d.Index == i) && _players.Count < 15)
+                {
+                    <div class="player-select">
+                        <PlayerChoice PlayerData="new PlayerData()" Index="i" Position="4" OnPlayerSelected="HandlePlayerSelected"></PlayerChoice>
+                    </div>
+                }
+            }
+        </div>
+        <MudSpacer></MudSpacer>
+        <div class="substitute-row">
+            <MudText Style="width: 10%;">Subs</MudText>
+            @if (_players != null)
+            {
+                @foreach (PlayerData substitute in _players.Where(i => i.Index >= 11))
+                {
+                    <PlayerChoice PlayerData="substitute" Index="substitute.Index" Position="substitute.Position" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed"></PlayerChoice>
+                }
+            }
+            @for (int i = 11; i < 15; i++)
+            {
+                @if (_players == null || !_players.Any(d => d.Index == i) && _players.Count < 15)
+                {
+                    <div class="player-select">
+                        <PlayerChoice PlayerData="new PlayerData()" Index="i" Position="i - 10" OnPlayerSelected="HandlePlayerSelected"></PlayerChoice>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+else
+{
+    <MudPaper Class="d-flex flex-column pa-4 justify-center align-center" Elevation="0" Style="height: 100%; overflow-y:auto; overflow-x: hidden;">
+        <MudProgressCircular Size="Size.Large" Indeterminate="true" />
+        <MudText Class="pa-2" Typo="Typo.h4">Loading...</MudText>
+    </MudPaper>
+}
 
-<h1>Team</h1>
+<style scoped>
+    .formation {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
 
-<MudButton OnClick="OpenPlayerSearch" Variant="Variant.Outlined" Color="Color.Primary">
-    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Large"></MudIcon> Add Player
-</MudButton>
+    .row {
+        display: flex;
+        justify-content: center;
+        align-content: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .substitute-row {
+        display: flex;
+        justify-content: center;
+        align-content: center;
+        flex-wrap: wrap;
+        margin-top: 5%;
+        margin-bottom: 5%
+        gap: 15px;
+    }
+
+    .player-select {
+        width: 15%;
+    }
+</style>
 
 @code {
-    private PlayerData _playerData = new PlayerData();
-    public async Task OpenPlayerSearch()
+    List<PlayerData> _players = new List<PlayerData>();
+    List<PlayerData> _goalKeepers = new List<PlayerData>();
+    List<PlayerData> _defenders = new List<PlayerData>();
+    List<PlayerData> _midfielders = new List<PlayerData>();
+    List<PlayerData> _attackers = new List<PlayerData>();
+    bool _loading = false;
+    bool _isSubstituting = false;
+    int _toBeSubbedOut;
+    int _toBeSubbedIn;
+
+    protected override async Task OnInitializedAsync()
     {
-        var options = new DialogOptions
-            {
-                MaxWidth = MaxWidth.Large,
-                BackdropClick = true
-            };
+        _loading = true;
+        _players = await _teamStateService.RetrieveTeam();
+        if (_players != null)
+        {
+            _players = await _fplRepository.GetLatestPlayerData(_players);
+        }
+        await UpdatePlayerList();
+    }
 
-        var parameters = new DialogParameters
-            {
-                ["Value"] = _playerData
-            };
+    private async Task UpdatePlayerList()
+    {
+        if (_players != null)
+        {
+            _goalKeepers = _players.Where(i => i.Position == 1).ToList();
+            _defenders = _players.Where(i => i.Position == 2).ToList();
+            _midfielders = _players.Where(i => i.Position == 3).ToList();
+            _attackers = _players.Where(i => i.Position == 4).ToList();
+        }
+        else
+        {
+            _players = new List<PlayerData>();
+        }
+        _loading = false;
+    }
 
-        var dialog = await DialogService.ShowAsync<PlayerDialog>("Search Player", parameters, options);
+    private async Task HandlePlayerSelected(PlayerData player)
+    {
+        var existingPlayer = _players.FirstOrDefault(i => i.Index == player.Index);
 
+        if (existingPlayer != null)
+        {
+            // Replace existing player's data
+            existingPlayer.Id = player.Id;
+            existingPlayer.FirstName = player.FirstName;
+            existingPlayer.LastName = player.LastName;
+            existingPlayer.WebName = player.WebName;
+            existingPlayer.Position = player.Position;
+            existingPlayer.Index = player.Index;
+        }
+        else
+        {
+            // Add new player if no existing player at the index
+            _players.Add(player);
+        }
+        _players.OrderBy(p => p.Index);
+        await UpdatePlayerList();
+        await _teamStateService.SetTeam(_players);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleSubstitution(int toBeSubbedOut)
+    {
+        _toBeSubbedOut = toBeSubbedOut;
+        _isSubstituting = true;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubConfirmed(int toBeSubbedIn)
+    {
+        _isSubstituting = false;
+        _toBeSubbedIn = toBeSubbedIn;
+        PlayerData playerToBeSubbedOut = _players.Where(i => i.Index == _toBeSubbedOut).FirstOrDefault();
+        PlayerData playerToBeSubbedIn = _players.Where(i => i.Index == _toBeSubbedIn).FirstOrDefault();
+
+        playerToBeSubbedOut.Index = _toBeSubbedIn;
+        playerToBeSubbedIn.Index = _toBeSubbedOut;
+        _players = _players.OrderBy(i => i.Index).ToList();
+        await _teamStateService.SetTeam(_players);
+
+        StateHasChanged();
     }
 }

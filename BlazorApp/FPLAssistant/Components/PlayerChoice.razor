@@ -1,0 +1,78 @@
+﻿@inject IDialogService DialogService
+
+<div class="player-select">
+    <MudButton class="player-select" OnClick="HandlePlayerClick" Variant="Variant.Text" Color="Color.Primary">
+        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Large"></MudIcon>
+    </MudButton>
+    @if (PlayerData != null)
+    {
+        <MudText>@PlayerData.WebName</MudText>
+    }
+</div>
+
+<style scoped>
+    .player-select {
+        width: 150px;
+        align-content: center
+    }
+</style>
+
+@code {
+    [Parameter] 
+    public int Index { get; set; }
+    [Parameter]
+    public PlayerData PlayerData { get; set; }
+    [Parameter]
+    public int Position { get; set; }
+    [Parameter]
+    public bool IsSubstituting { get; set; }
+    [Parameter] 
+    public EventCallback<PlayerData> OnPlayerSelected { get; set; }
+    [Parameter]
+    public EventCallback<int> PlayerSubbed { get; set; }
+    [Parameter]
+    public EventCallback<int> PlayerSubConfirmed { get; set; }
+
+    public async Task HandlePlayerClick()
+    {
+        if (IsSubstituting)
+        {
+            await PlayerSubConfirmed.InvokeAsync(Index);
+        }
+        else
+        {
+            await OpenPlayerSearch();
+        }
+    }
+
+    public async Task OpenPlayerSearch()
+    {
+        var options = new DialogOptions
+            {
+                MaxWidth = MaxWidth.Large,
+                BackdropClick = true
+            };
+
+        var parameters = new DialogParameters
+            {
+                ["Value"] = PlayerData,
+                ["Position"] = Position
+            };
+
+        var dialog = await DialogService.ShowAsync<PlayerDialog>("Add Player", parameters, options);
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is PlayerData selectedPlayer)
+        {
+            selectedPlayer.Index = Index;
+            PlayerData = selectedPlayer;
+            await OnPlayerSelected.InvokeAsync(selectedPlayer); // Invoke callback with index and player
+            await InvokeAsync(StateHasChanged);
+        }
+        else if (!result.Canceled && result.Data is int indexToSub)
+        {
+            await PlayerSubbed.InvokeAsync(indexToSub);
+        }
+    }
+}

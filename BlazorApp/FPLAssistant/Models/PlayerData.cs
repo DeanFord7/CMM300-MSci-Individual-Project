@@ -15,6 +15,8 @@ namespace FPLAssistant.Models
         public string FirstName { get; set; }
         [JsonPropertyName("second_name")]
         public string LastName { get; set; }
+        [JsonPropertyName("web_name")]
+        public string WebName { get; set; }
         [JsonPropertyName("total_points")]
         public int TotalPoints { get; set; }
         [JsonPropertyName("goals_scored")]
@@ -25,5 +27,6 @@ namespace FPLAssistant.Models
         public int Cost {  get; set; }
         [JsonPropertyName("element_type")]
         public int Position { get; set; }
+        public int Index { get; set; }
     }
 }

@@ -14,12 +14,13 @@ namespace FPLAssistant.Repositories
     public interface IFPLRepository
     {
         Task<BootStrapAPIResponse> GetBootStrapAPIResponse();
-        Task<PlayerData> GetPlayerData();
+        Task<PlayerData> GetPlayerData(int playerId);
         Task<bool> GeneratePlayerDataCSV();
         Task<FixtureData> GetPlayerFixtureData(int playerId);
         Task<int?> GetPredictionForPlayer(int playerId);
         Task<History> GetPlayerAverages(FixtureData playerFixtureData);
         Task<List<PlayerData>> GetAllPlayers();
+        Task<List<PlayerData>> GetLatestPlayerData(List<PlayerData> playerData);
     }
 
     public class FPLRepository : IFPLRepository
@@ -53,30 +54,15 @@ namespace FPLAssistant.Repositories
             }
         }
 
-        public async Task<PlayerData> GetPlayerData()
+        public async Task<PlayerData> GetPlayerData(int playerId)
         {
             PlayerData playerData = new PlayerData();
-            Random random = new Random();
-
-            int randomId = random.Next(1, 701);
 
             string generalInfoUrl = "https://fantasy.premierleague.com/api/bootstrap-static";
 
             BootStrapAPIResponse bootStrapAPIResponse = await GetBootStrapAPIResponse();
 
-            playerData = bootStrapAPIResponse.Elements.Where(i => i.Id == randomId).FirstOrDefault();
-
-            string playerUrl = $"https://fantasy.premierleague.com/api/element-summary/{randomId}/";
-
-            try
-            {
-                var response = await _httpClient.GetStringAsync(playerUrl);
-            }
-            catch (HttpRequestException e) 
-            { 
-                Console.WriteLine(e.Message);
-                return null;
-            }
+            playerData = bootStrapAPIResponse.Elements.Where(i => i.Id == playerId).FirstOrDefault();
 
             return playerData;
         }
@@ -328,7 +314,23 @@ namespace FPLAssistant.Repositories
         {
             BootStrapAPIResponse bootStrapAPIResponse = await GetBootStrapAPIResponse();
 
-            return bootStrapAPIResponse.Elements;
+            return bootStrapAPIResponse.Elements.OrderBy(i => i.FirstName).ThenBy(i => i.LastName).ToList();
+        }
+
+        public async Task<List<PlayerData>> GetLatestPlayerData(List<PlayerData> playerData)
+        {
+
+            List<PlayerData> updatedPlayerData = new List<PlayerData>();
+
+            foreach (PlayerData player in playerData)
+            {
+                PlayerData updated = await GetPlayerData(player.Id);
+                updated.Index = player.Index;
+
+                updatedPlayerData.Add(updated);
+            }
+
+            return updatedPlayerData;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿@page "/"
+﻿@page "/home"
 @inject FPLRepository _fplRepository
 @inject PythonRepository _pythonRepository
 
@@ -35,7 +35,7 @@
     public async Task<bool> GetPlayerData()
     {
         predictedScore = null;
-        PlayerData playerData = await _fplRepository.GetPlayerData();
+        PlayerData playerData = await _fplRepository.GetPlayerData(1);
 
         if (playerData != null)
         {

@@ -2,18 +2,29 @@
 
 <MudDialog>
     <DialogContent>
-        <h3>Player</h3>
-
-        <MudTextField Label="Search Player" @bind-Value="_searchText" Immediate="true"></MudTextField>
+        @if (Value != null) 
+        {
+            <MudText>@Value.WebName</MudText>    
+        }
+        @if (_isTransferring)
+        {
+            <MudTextField Label="Search" @bind-Value="_searchText" Immediate="true" OnKeyUp="FilterPlayers"></MudTextField>
         <MudList T="PlayerData">
             @foreach (var player in _filteredPlayers)
             {
-                <MudListItem Clicked="() => SelectPlayer(player)">
-                    @player.FirstName @player.LastName
+                <MudListItem OnClick="() => SelectPlayer(player)">
+                    @player.FirstName @player.LastName (@player.WebName)
                 </MudListItem>
             }
         </MudList>
+        }
     </DialogContent>
+    <DialogActions>
+        <MudSpacer></MudSpacer>
+        <MudButton Variant="MudBlazor.Variant.Outlined" OnClick="Transfer">Transfer</MudButton>
+        <MudButton Variant="MudBlazor.Variant.Outlined" OnClick="Substitute">Substitute</MudButton>
+        <MudButton Variant="MudBlazor.Variant.Outlined" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
 </MudDialog>
 
 @code {
@@ -21,24 +32,54 @@
     private IMudDialogInstance MudDialog { get; set; }
     [Parameter]
     public PlayerData Value { get; set; }
+    [Parameter]
+    public int Position { get; set; }
 
     private string _searchText = "";
-    private List<PlayerData> allPlayers = new();
-    private List<PlayerData> _filteredPlayers => allPlayers
-        .Where(p => p.FirstName.ToLower().Contains(_searchText.ToLower()) || p.LastName.ToLower().Contains(_searchText.ToLower()))
-        .ToList();
+    private List<PlayerData> _allPlayers = new List<PlayerData>();
+    private List<PlayerData> _filteredPlayers = new List<PlayerData>();
+    private bool _isTransferring = false;
 
     protected override async Task OnInitializedAsync()
     {
+        if (Value.Id == 0)
+        {
+            _isTransferring = true;
+        }
         // Load players from API
-        allPlayers = await _fplRepository.GetAllPlayers();
+        _allPlayers = await _fplRepository.GetAllPlayers();
+        StateHasChanged();
     }
 
     private void SelectPlayer(PlayerData player)
     {
-        // Logic to select player from the list (you may update the Value or call a callback here)
         Value = player;
-        // Optionally close the dialog after selecting the player
-        // MudDialog.Close(DialogResult.Ok(player));
+        MudDialog.Close(DialogResult.Ok(player));
+    }
+
+    private async Task FilterPlayers()
+    {
+        if (_searchText.Length >= 1)
+        {
+            _filteredPlayers = _allPlayers
+                .Where(i => (i.FirstName.ToLower().Contains(_searchText.ToLower()) || i.LastName.ToLower().Contains(_searchText.ToLower()) || i.WebName.ToLower().Contains(_searchText.ToLower())) && i.Position == Position)
+                .ToList();
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Close();
+    }
+
+    private void Transfer()
+    {
+        _isTransferring = true;
+        StateHasChanged();
+    }
+
+    private void Substitute()
+    {
+        MudDialog.Close(DialogResult.Ok(Value.Index));
     }
 }
