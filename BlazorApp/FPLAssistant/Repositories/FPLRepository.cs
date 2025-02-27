@@ -21,6 +21,7 @@ namespace FPLAssistant.Repositories
         Task<History> GetPlayerAverages(FixtureData playerFixtureData);
         Task<List<PlayerData>> GetAllPlayers();
         Task<List<PlayerData>> GetLatestPlayerData(List<PlayerData> playerData);
+        Task<List<PlayerData>> PredictTeamScores(List<PlayerData> players);
     }
 
     public class FPLRepository : IFPLRepository
@@ -331,6 +332,16 @@ namespace FPLAssistant.Repositories
             }
 
             return updatedPlayerData;
+        }
+
+        public async Task<List<PlayerData>> PredictTeamScores(List<PlayerData> players)
+        {
+            foreach (PlayerData player in players)
+            {
+                player.PredictedScore = await GetPredictionForPlayer(player.Id);
+            }
+
+            return players;
         }
     }
 }

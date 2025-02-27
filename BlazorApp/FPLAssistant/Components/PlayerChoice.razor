@@ -1,19 +1,27 @@
 ﻿@inject IDialogService DialogService
 
 <div class="player-select">
-    <MudButton class="player-select" OnClick="HandlePlayerClick" Variant="Variant.Text" Color="Color.Primary">
-        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Large"></MudIcon>
+    <MudButton class="player-select" OnClick="HandlePlayerClick" Variant="Variant.Text">
+        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Large" Style="@GetIconColour(PlayerData.Team)"></MudIcon>
     </MudButton>
     @if (PlayerData != null)
     {
         <MudText>@PlayerData.WebName</MudText>
+        @if (PlayerData.PredictedScore != null)
+        {
+            <MudText>@PlayerData.PredictedScore</MudText>
+        }
     }
 </div>
 
 <style scoped>
     .player-select {
         width: 150px;
-        align-content: center
+        display: flex;
+        flex-direction: column; /* Stack items vertically */
+        align-items: center; /* Center items horizontally */
+        justify-content: center; /* Center content */
+        text-align: center; /* Center text */
     }
 </style>
 
@@ -73,6 +81,43 @@
         else if (!result.Canceled && result.Data is int indexToSub)
         {
             await PlayerSubbed.InvokeAsync(indexToSub);
+        }
+    }
+
+    public string GetIconColour(int team)
+    {
+        switch (team)
+        {
+            case 1:
+            case 3:
+            case 4:
+            case 12:
+            case 14:
+            case 16:
+            case 17:
+                return "color: red"; // lightred is not a CSS color, lightcoral is valid
+            case 2:
+            case 19:
+                return "color: #9e1b32"; // claret is a deep red color, using hex for better control
+            case 5:
+                return "color: lightblue"; // valid CSS color name
+            case 6:
+            case 7:
+            case 8:
+            case 10:
+            case 11:
+                return "color: blue"; // valid CSS color name
+            case 9:
+            case 18:
+                return "color: white; border: 1px solid black"; // valid CSS color name
+            case 13:
+                return "color: skyblue"; // valid CSS color name
+            case 15:
+                return "color: black"; // valid CSS color name
+            case 20:
+                return "color: orange"; // valid CSS color name
+            default:
+                return "color: black"; // fallback color in case of an unknown team
         }
     }
 }

@@ -27,6 +27,9 @@ namespace FPLAssistant.Models
         public int Cost {  get; set; }
         [JsonPropertyName("element_type")]
         public int Position { get; set; }
+        [JsonPropertyName("team")]
+        public int Team { get; set; }
         public int Index { get; set; }
+        public int? PredictedScore { get; set; }
     }
 }

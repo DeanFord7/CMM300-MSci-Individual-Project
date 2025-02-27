@@ -5,6 +5,28 @@
 
 @if (!_loading)
 {
+    <div class="page-content">
+    <div class="team-banner">
+        @if (_isEditingTeamName)
+        {
+            <MudTextField @bind-Value="_teamName"></MudTextField>
+            <MudButton Variant="Variant.Text" OnClick="SaveTeamName">
+                <MudIcon Icon="@Icons.Material.Filled.Save" Size="Size.Medium"></MudIcon>
+            </MudButton>
+            <MudButton Variant="Variant.Text" OnClick="CancelEditTeamName">
+                <MudIcon Icon="@Icons.Material.Filled.Cancel" Size="Size.Medium"></MudIcon>
+            </MudButton>
+        }
+        else
+        {
+            <MudText Typo="Typo.h6">@_teamName</MudText>
+            <MudButton Variant="Variant.Text" OnClick="EditTeamName">
+                <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Medium"></MudIcon>
+            </MudButton>
+        }
+        <MudSpacer />
+        <MudText>Remaining Budget @FormatCost(_budgetRemaining)</MudText>
+    </div>
     <div class="formation">
         <div class="row">
             @foreach (PlayerData goalkeeper in _goalKeepers)
@@ -94,6 +116,13 @@
             }
         </div>
     </div>
+
+    <div class="bottom-banner">
+        <MudButton Variant="Variant.Outlined" OnClick="PredictTeamScores">
+            Predict Scores
+        </MudButton>
+    </div>
+    </div>
 }
 else
 {
@@ -124,12 +153,47 @@ else
         align-content: center;
         flex-wrap: wrap;
         margin-top: 5%;
-        margin-bottom: 5%
+        margin-bottom: 5%;
         gap: 15px;
     }
 
     .player-select {
         width: 15%;
+    }
+
+    .team-banner {
+        position: sticky;
+        top: 5px;
+        z-index: 1000;
+        background-color: #f5f5f5; /* Light gray */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 20px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 5%;
+        width: 95%;
+        margin-left: 5px;
+    }
+
+    .bottom-banner {
+        position: sticky;
+        bottom: 5px;
+        z-index: 1000;
+        background-color: #f5f5f5; /* Light gray */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 20px;
+        box-shadow: 0px -4px 6px rgba(0, 0, 0, 0.1);
+        width: 95%;
+        margin-left: 5px;
+    }
+
+    .page-content {
+        overflow-y: auto;
+        overflow-x: hidden;
+        max-height: 95vh; /* Allows scrolling while keeping banners visible */
     }
 </style>
 
@@ -141,16 +205,26 @@ else
     List<PlayerData> _attackers = new List<PlayerData>();
     bool _loading = false;
     bool _isSubstituting = false;
+    bool _isEditingTeamName = false;
     int _toBeSubbedOut;
     int _toBeSubbedIn;
+    double _baseBudget = 1000;
+    double _budgetRemaining;
+    string _teamName = "Your Fantasy Team";
 
     protected override async Task OnInitializedAsync()
     {
         _loading = true;
         _players = await _teamStateService.RetrieveTeam();
+        _teamName = await _teamStateService.RetrieveTeamName();
         if (_players != null)
         {
             _players = await _fplRepository.GetLatestPlayerData(_players);
+            _budgetRemaining = await CalculateRemainingBudget();
+        }
+        if (String.IsNullOrEmpty(_teamName))
+        {
+            _teamName = "Your Fantasy Team";
         }
         await UpdatePlayerList();
     }
@@ -173,6 +247,8 @@ else
 
     private async Task HandlePlayerSelected(PlayerData player)
     {
+        _loading = true;
+        await InvokeAsync(StateHasChanged);
         var existingPlayer = _players.FirstOrDefault(i => i.Index == player.Index);
 
         if (existingPlayer != null)
@@ -184,6 +260,7 @@ else
             existingPlayer.WebName = player.WebName;
             existingPlayer.Position = player.Position;
             existingPlayer.Index = player.Index;
+            existingPlayer.Team = player.Team;
         }
         else
         {
@@ -193,6 +270,7 @@ else
         _players.OrderBy(p => p.Index);
         await UpdatePlayerList();
         await _teamStateService.SetTeam(_players);
+        _loading = false;
         await InvokeAsync(StateHasChanged);
     }
 
@@ -215,6 +293,55 @@ else
         _players = _players.OrderBy(i => i.Index).ToList();
         await _teamStateService.SetTeam(_players);
 
+        StateHasChanged();
+    }
+
+    private async Task<double> CalculateRemainingBudget()
+    {
+        double remainingBudget = _baseBudget;
+        foreach (PlayerData player in _players)
+        {
+            remainingBudget -= player.Cost;
+        }
+
+        return remainingBudget;
+    }
+
+    public string FormatCost(double cost)
+    {
+        double decimalCost = cost / 10;
+        if (decimalCost < 0)
+        {
+            decimalCost = 0;
+        }
+        return $"£{decimalCost}m";
+    }
+
+    public async Task EditTeamName()
+    {
+        _isEditingTeamName = true;
+    }
+
+    public async Task SaveTeamName()
+    {
+        await _teamStateService.SetTeamName(_teamName);
+        _isEditingTeamName = false;
+    }
+
+    public async Task CancelEditTeamName()
+    {
+        _teamName = await _teamStateService.RetrieveTeamName();
+
+        if (String.IsNullOrEmpty(_teamName))
+        {
+            _teamName = "Your Fantasy Team";
+        }
+        _isEditingTeamName = false;
+    }
+
+    public async Task PredictTeamScores()
+    {
+        _players = await _fplRepository.PredictTeamScores(_players);
         StateHasChanged();
     }
 }

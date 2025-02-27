@@ -12,10 +12,12 @@ namespace FPLAssistant.Services
     {
         private readonly ILocalStorageService _localStorage;
         public List<PlayerData> Players { get; private set; } = new List<PlayerData>();
+        public string TeamName;
         public TeamStateService(ILocalStorageService localStorage)
         {
             _localStorage = localStorage;
             LoadTeam();
+            LoadTeamName();
         }
 
         private async Task LoadTeam()
@@ -38,6 +40,28 @@ namespace FPLAssistant.Services
         {
             await LoadTeam();
             return Players;
+        }
+
+        private async Task LoadTeamName()
+        {
+            TeamName = await _localStorage.GetItemAsync<string>("team_name");
+        }
+
+        private async Task SaveTeamName()
+        {
+            await _localStorage.SetItemAsync("team_name", TeamName);
+        }
+
+        public async Task SetTeamName(string teamName)
+        {
+            TeamName = teamName;
+            await SaveTeamName();
+        }
+
+        public async Task<string> RetrieveTeamName()
+        {
+            await LoadTeamName();
+            return TeamName;
         }
     }
 }

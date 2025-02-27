@@ -4,7 +4,11 @@
     <DialogContent>
         @if (Value != null) 
         {
-            <MudText>@Value.WebName</MudText>    
+            <MudText>@Value.FirstName @Value.LastName (@Value.WebName)</MudText>    
+        }
+        @if (_predictedScore != null)
+        {
+            <MudText>Predicted score: @_predictedScore</MudText>
         }
         @if (_isTransferring)
         {
@@ -23,6 +27,7 @@
         <MudSpacer></MudSpacer>
         <MudButton Variant="MudBlazor.Variant.Outlined" OnClick="Transfer">Transfer</MudButton>
         <MudButton Variant="MudBlazor.Variant.Outlined" OnClick="Substitute">Substitute</MudButton>
+        <MudButton Variant="MudBlazor.Variant.Outlined" OnClick="GetPredictedScore">Predict</MudButton>
         <MudButton Variant="MudBlazor.Variant.Outlined" OnClick="Cancel">Cancel</MudButton>
     </DialogActions>
 </MudDialog>
@@ -39,6 +44,7 @@
     private List<PlayerData> _allPlayers = new List<PlayerData>();
     private List<PlayerData> _filteredPlayers = new List<PlayerData>();
     private bool _isTransferring = false;
+    private int? _predictedScore;
 
     protected override async Task OnInitializedAsync()
     {
@@ -81,5 +87,10 @@
     private void Substitute()
     {
         MudDialog.Close(DialogResult.Ok(Value.Index));
+    }
+
+    private async Task GetPredictedScore()
+    {
+        _predictedScore = await _fplRepository.GetPredictionForPlayer(Value.Id);
     }
 }
