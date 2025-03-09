@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Reflection;
+using FPLAssistant.Services;
+using FPLAssistant.Algorithms;
 
 namespace FPLAssistant.Repositories
 {
@@ -22,16 +24,20 @@ namespace FPLAssistant.Repositories
         Task<List<PlayerData>> GetAllPlayers();
         Task<List<PlayerData>> GetLatestPlayerData(List<PlayerData> playerData);
         Task<List<PlayerData>> PredictTeamScores(List<PlayerData> players);
+        Task<List<PlayerData>> PredictAllPlayers();
+        Task<List<RecommendedTransfer>> RecommendTransfers(int numberOfTransfers);
     }
 
     public class FPLRepository : IFPLRepository
     {
         private readonly HttpClient _httpClient;
         private readonly PythonRepository _pythonRepository;
-        public FPLRepository(HttpClient httpClient, PythonRepository pythonRepository) 
+        private readonly TeamStateService _teamStateService;
+        public FPLRepository(HttpClient httpClient, PythonRepository pythonRepository, TeamStateService teamStateService) 
         { 
             _httpClient = httpClient;
             _pythonRepository = pythonRepository;
+            _teamStateService = teamStateService;
         }
 
         public async Task<BootStrapAPIResponse> GetBootStrapAPIResponse()
@@ -342,6 +348,50 @@ namespace FPLAssistant.Repositories
             }
 
             return players;
+        }
+
+        public async Task<List<PlayerData>> PredictAllPlayers()
+        {
+            List<PlayerData> allPlayers = await GetAllPlayers();
+            List<History> allPlayerPrecitionData = new List<History>();
+
+            foreach (PlayerData player in allPlayers)
+            {
+                FixtureData playerFixtureData = await GetPlayerFixtureData(player.Id);
+
+                if (playerFixtureData != null)
+                {
+                    History averagedHistory = await GetPlayerAverages(playerFixtureData);
+
+                    allPlayerPrecitionData.Add(averagedHistory);
+                }
+            }
+
+            allPlayers = await _pythonRepository.PredictAllPlayerScores(allPlayerPrecitionData, allPlayers);
+
+            return allPlayers;
+        }
+
+        public async Task<List<RecommendedTransfer>> RecommendTransfers(int numberOftransfers)
+        {
+            List<RecommendedTransfer> recommendedTransfers = new List<RecommendedTransfer>();
+            List<PlayerData> currentTeam = await _teamStateService.RetrieveTeam();
+            double remainingBudget = await _teamStateService.RetrieveBudget();
+            List<PlayerData> playersWithPredictions = await PredictAllPlayers();
+
+            foreach (PlayerData player in currentTeam)
+            {
+                player.PredictedScore = playersWithPredictions
+                    .Where(p => p.Id == player.Id)
+                    .Select(p => p.PredictedScore)
+                    .FirstOrDefault();
+            }
+
+            var transferAlgorithm = new TransferAlgorithm(currentTeam, playersWithPredictions, remainingBudget, numberOftransfers);
+
+            recommendedTransfers = transferAlgorithm.Run();
+
+            return recommendedTransfers;
         }
     }
 }

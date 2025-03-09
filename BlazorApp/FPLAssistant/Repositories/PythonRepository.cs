@@ -7,6 +7,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace FPLAssistant.Repositories
 {
@@ -15,6 +16,8 @@ namespace FPLAssistant.Repositories
         Task<string> SendMessage();
         Task<bool> GenerateCsv(List<History> fixtureHistory);
         Task<bool> TrainModel();
+        Task<int?> PredictPlayerScore(History upcomingFixtureData);
+        Task<List<PlayerData>> PredictAllPlayerScores(List<History> playerData, List<PlayerData> bootstrapResponse);
     }
 
     public class PythonRepository : IPythonRepository
@@ -119,10 +122,60 @@ namespace FPLAssistant.Repositories
                 return null;
             }
         }
+
+        public async Task<List<PlayerData>> PredictAllPlayerScores(List<History> playerData, List<PlayerData> bootstrapResponse)
+        {
+            var url = flaskUrl + "predict_all_player_scores";
+
+            var serializedData = JsonSerializer.Serialize(playerData);
+            Console.WriteLine("Sending: " + serializedData);
+            var jsonContent = new StringContent(serializedData, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, jsonContent);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadAsStringAsync();
+                Console.WriteLine("Response from Flask: " + result);
+
+                var predictions = JsonSerializer.Deserialize<List<PlayerPredictionResponse>>(result);
+
+                if (predictions != null)
+                {
+                    List<PlayerData> allPlayers = bootstrapResponse;
+                    
+                    foreach (PlayerData player in allPlayers)
+                    {
+                        player.PredictedScore = (int)Math.Round(predictions
+                            .Where(i => i.Id == player.Id)
+                            .Select(i => i.PredictedScore)
+                            .FirstOrDefault());
+                    }
+
+                    return allPlayers;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Error: " + response.StatusCode);
+            }
+
+            return new List<PlayerData>();
+        }
+
     }
 
     public class PredictionResponse
     {
         public List<float> Prediction { get; set; }
+    }
+
+    public class PlayerPredictionResponse
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("predicted_score")]
+        public float PredictedScore { get; set; }
     }
 }

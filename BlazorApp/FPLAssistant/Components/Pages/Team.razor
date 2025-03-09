@@ -2,28 +2,13 @@
 @inject FPLRepository _fplRepository
 @inject PythonRepository _pythonRepository
 @inject TeamStateService _teamStateService
+@inject IDialogService DialogService
 
 @if (!_loading)
 {
     <div class="page-content">
     <div class="team-banner">
-        @if (_isEditingTeamName)
-        {
-            <MudTextField @bind-Value="_teamName"></MudTextField>
-            <MudButton Variant="Variant.Text" OnClick="SaveTeamName">
-                <MudIcon Icon="@Icons.Material.Filled.Save" Size="Size.Medium"></MudIcon>
-            </MudButton>
-            <MudButton Variant="Variant.Text" OnClick="CancelEditTeamName">
-                <MudIcon Icon="@Icons.Material.Filled.Cancel" Size="Size.Medium"></MudIcon>
-            </MudButton>
-        }
-        else
-        {
-            <MudText Typo="Typo.h6">@_teamName</MudText>
-            <MudButton Variant="Variant.Text" OnClick="EditTeamName">
-                <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Medium"></MudIcon>
-            </MudButton>
-        }
+        
         <MudSpacer />
         <MudText>Remaining Budget @FormatCost(_budgetRemaining)</MudText>
     </div>
@@ -121,6 +106,9 @@
         <MudButton Variant="Variant.Outlined" OnClick="PredictTeamScores">
             Predict Scores
         </MudButton>
+        <MudButton Variant="Variant.Outlined" OnClick="RecommendTransfers">
+            Recommend Transfers
+        </MudButton>
     </div>
     </div>
 }
@@ -217,10 +205,15 @@ else
         _loading = true;
         _players = await _teamStateService.RetrieveTeam();
         _teamName = await _teamStateService.RetrieveTeamName();
+        _budgetRemaining = await _teamStateService.RetrieveBudget();
         if (_players != null)
         {
             _players = await _fplRepository.GetLatestPlayerData(_players);
-            _budgetRemaining = await CalculateRemainingBudget();
+            if (_budgetRemaining == null)
+            {
+                _budgetRemaining = await CalculateRemainingBudget();
+                await _teamStateService.SetBudget(_budgetRemaining);
+            }
         }
         if (String.IsNullOrEmpty(_teamName))
         {
@@ -343,5 +336,37 @@ else
     {
         _players = await _fplRepository.PredictTeamScores(_players);
         StateHasChanged();
+    }
+
+    public async Task RecommendTransfers()
+    {
+        // await _fplRepository.PredictAllPlayers();
+        var options = new DialogOptions
+            {
+                MaxWidth = MaxWidth.ExtraExtraLarge,
+                BackdropClick = true,
+            };
+
+        var parameters = new DialogParameters
+            {
+                ["Players"] = _players,
+                ["Budget"] = _budgetRemaining
+            };
+
+        var dialog = await DialogService.ShowAsync<TransferDialog>("Transfers", parameters, options);
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is int numberOfTransfers)
+        {
+            List<RecommendedTransfer> recommendedTransfers = await _fplRepository.RecommendTransfers(numberOfTransfers);
+
+            var transferParameters = new DialogParameters
+                {
+                    ["Transfers"] = recommendedTransfers
+                };
+
+            var transferDialog = await DialogService.ShowAsync<TransferDialog>("Transfers", transferParameters, options);
+        }
     }
 }

@@ -13,11 +13,13 @@ namespace FPLAssistant.Services
         private readonly ILocalStorageService _localStorage;
         public List<PlayerData> Players { get; private set; } = new List<PlayerData>();
         public string TeamName;
+        public double RemainingBudget;
         public TeamStateService(ILocalStorageService localStorage)
         {
             _localStorage = localStorage;
             LoadTeam();
             LoadTeamName();
+            LoadBudget();
         }
 
         private async Task LoadTeam()
@@ -62,6 +64,28 @@ namespace FPLAssistant.Services
         {
             await LoadTeamName();
             return TeamName;
+        }
+
+        private async Task LoadBudget()
+        {
+            RemainingBudget = await _localStorage.GetItemAsync<double>("budget");
+        }
+
+        private async Task SaveBudget()
+        {
+            await _localStorage.SetItemAsync("budget", RemainingBudget);
+        }
+
+        public async Task SetBudget(double budget)
+        {
+            RemainingBudget = budget;
+            await SaveBudget();
+        }
+
+        public async Task<double> RetrieveBudget()
+        {
+            await LoadBudget();
+            return RemainingBudget;
         }
     }
 }

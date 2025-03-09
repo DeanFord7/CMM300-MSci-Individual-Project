@@ -102,5 +102,36 @@ def predict_player_score():
 
     return jsonify(prediction.tolist())
 
+@app.route('/predict_all_player_scores', methods=['POST'])
+def predict_all_players():
+    global model
+    print("Predicting all players")
+
+    if model is None:
+        if os.path.exists(MODEL_PATH):
+            model = joblib.load(MODEL_PATH)  # Try loading saved model
+            print("✅ Model loaded from file.")
+        else:
+            print("❌ No model available.")
+            return jsonify({"error": "Model not trained yet"}), 400
+    
+    input_data = request.get_json()
+    print("Received data:", input_data)
+
+    df_input = pd.DataFrame(input_data)
+
+    if "total_points" in df_input.columns:
+        df_input = df_input.drop(columns=["total_points"])
+
+    predictions = model.predict(df_input)
+
+    # Construct response: each prediction is linked to a player
+    response_data = [
+        {"id": player["element"], "predicted_score": float(score)}
+        for player, score in zip(input_data, predictions)
+    ]
+
+    return jsonify(response_data)
+
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,111 @@
+﻿@inject FPLRepository _fplRepository
+@inject TeamStateService _teamStateService
+
+<MudDialog>
+    <DialogContent>
+        @if (Players != null && Players.Count > 0)
+        {
+            <MudGrid>
+                <MudItem xs="10">
+                    <MudText>How many transfers do you want to make?</MudText>
+                </MudItem>
+                <MudItem xs="2">
+                    <MudTextField @bind-Value=_numberOfTransfers Immediate="true"></MudTextField>
+                </MudItem>
+            </MudGrid>
+            <MudGrid>
+                <MudItem xs="10">
+                    <MudText>Remaining Budget</MudText>
+                </MudItem>
+                <MudItem xs="2">
+                    <MudTextField @bind-Value=Budget Immediate="true"></MudTextField>
+                </MudItem>
+            </MudGrid>
+
+            @foreach (PlayerData player in Players)
+            {
+                <MudGrid>
+                    <MudItem xs="10">
+                        <MudText>@player.FirstName @player.LastName (@player.WebName)</MudText>
+                    </MudItem>
+                    <MudItem xs="2">
+                        <MudTextField @bind-Value=player.SellingPrice></MudTextField>
+                    </MudItem>
+                </MudGrid>
+            }
+        }
+        else if (Transfers != null && Transfers.Count > 0)
+        {
+            @foreach (RecommendedTransfer transfer in Transfers)
+            {
+                <MudGrid>
+                    <MudItem xs="4">
+                        <MudText>Out: @transfer.PlayerOut.WebName @transfer.PlayerOut.PredictedScore</MudText>
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudText>In: @transfer.PlayerIn.WebName @transfer.PlayerIn.PredictedScore</MudText>
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudText>Budget: @transfer.BudgetImpact</MudText>
+                    </MudItem>
+                </MudGrid>
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudSpacer></MudSpacer>
+        @if (Players != null && Players.Count > 0)
+        {
+            <MudButton Variant="MudBlazor.Variant.Outlined" OnClick="Cancel">Cancel</MudButton>
+            <MudButton Variant="MudBlazor.Variant.Outlined" OnClick="Confirm">Confirm</MudButton>
+        }
+        else if (Transfers != null && Transfers.Count > 0)
+        {
+            <MudButton Variant="MudBlazor.Variant.Outlined" OnClick="Cancel">Close</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+<style scoped>
+    .custom-dialog-width .mud-dialog {
+        max-width: 90vw !important; /* Make it 90% of the viewport width */
+        width: 90vw !important;
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public List<PlayerData> Players { get; set; }
+    [Parameter]
+    public double Budget { get; set; }
+    [Parameter]
+    public List<RecommendedTransfer> Transfers { get; set; }
+
+    public int? _numberOfTransfers { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Players != null)
+        {
+            foreach (PlayerData player in Players)
+            {
+                player.SellingPrice = (double)(player.Cost / 10.0);
+            }
+            await _teamStateService.SetTeam(Players);
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Close();
+    }
+
+    private async Task Confirm()
+    {
+        await _teamStateService.SetTeam(Players);
+        await _teamStateService.SetBudget(Budget);
+        MudDialog.Close(DialogResult.Ok(_numberOfTransfers));
+    }
+}

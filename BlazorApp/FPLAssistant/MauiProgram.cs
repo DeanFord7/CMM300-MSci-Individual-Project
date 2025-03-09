@@ -23,8 +23,8 @@ namespace FPLAssistant
             builder.Services.AddMauiBlazorWebView();
             builder.Services.AddMudServices();
             builder.Services.AddScoped(sp => new HttpClient());
-            builder.Services.AddScoped<FPLRepository>();
             builder.Services.AddScoped<PythonRepository>();
+            builder.Services.AddScoped<FPLRepository>();
             builder.Services.AddScoped<DialogService>();
             builder.Services.AddBlazoredLocalStorage();
             builder.Services.AddScoped<TeamStateService>();

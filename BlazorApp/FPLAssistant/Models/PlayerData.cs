@@ -31,5 +31,6 @@ namespace FPLAssistant.Models
         public int Team { get; set; }
         public int Index { get; set; }
         public int? PredictedScore { get; set; }
+        public double? SellingPrice { get; set; }
     }
 }
