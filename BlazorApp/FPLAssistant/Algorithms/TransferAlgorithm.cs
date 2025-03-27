@@ -205,18 +205,20 @@ namespace FPLAssistant.Algorithms
                     usedPlayerOuts.Add(transfer.PlayerOut.Id);
                     usedPlayerIns.Add(transfer.PlayerIn.Id);
                 }
+
+                if (offspring.Count >= _numberOfTransfers) break; // Stop if we reach limit
             }
 
             foreach (var transfer in parent2)
             {
+                if (offspring.Count >= _numberOfTransfers) break; // Stop if we reach limit
+
                 if (!usedPlayerOuts.Contains(transfer.PlayerOut.Id) && !usedPlayerIns.Contains(transfer.PlayerIn.Id))
                 {
                     offspring.Add(transfer);
                     usedPlayerOuts.Add(transfer.PlayerOut.Id);
                     usedPlayerIns.Add(transfer.PlayerIn.Id);
                 }
-
-                if (offspring.Count >= _numberOfTransfers) break; // Stop when we reach the required number
             }
 
             return offspring;
@@ -224,17 +226,23 @@ namespace FPLAssistant.Algorithms
 
 
 
+
         private void Mutate(List<RecommendedTransfer> offspring)
         {
-            if (_random.NextDouble() < _mutationRate)
+            if (_random.NextDouble() < _mutationRate && offspring.Count > 1)
             {
                 int index1 = _random.Next(offspring.Count);
                 int index2 = _random.Next(offspring.Count);
 
-                var temp = offspring[index1];
-                offspring[index1] = offspring[index2];
-                offspring[index2] = temp;
+                // Ensure we are swapping two different transfers
+                if (index1 != index2)
+                {
+                    var temp = offspring[index1];
+                    offspring[index1] = offspring[index2];
+                    offspring[index2] = temp;
+                }
             }
         }
+
     }
 }

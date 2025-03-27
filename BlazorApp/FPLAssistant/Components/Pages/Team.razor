@@ -359,8 +359,11 @@ else
 
         if (!result.Canceled && result.Data is int numberOfTransfers)
         {
+            _loading = true;
+            StateHasChanged();
             List<RecommendedTransfer> recommendedTransfers = await _fplRepository.RecommendTransfers(numberOfTransfers);
-
+            StateHasChanged();
+            _loading = false;
             var transferParameters = new DialogParameters
                 {
                     ["Transfers"] = recommendedTransfers
