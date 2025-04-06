@@ -32,5 +32,9 @@ namespace FPLAssistant.Models
         public int Index { get; set; }
         public int? PredictedScore { get; set; }
         public double? SellingPrice { get; set; }
+        [JsonPropertyName("chance_of_playing_this_round")]
+        public double? ChanceOfPlaying { get; set; }
+        [JsonPropertyName("news")]
+        public string? News {  get; set; }
     }
 }

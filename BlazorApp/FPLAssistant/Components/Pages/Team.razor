@@ -260,6 +260,7 @@ else
             // Add new player if no existing player at the index
             _players.Add(player);
         }
+        _players = await _fplRepository.GetLatestPlayerData(_players);
         _players.OrderBy(p => p.Index);
         await UpdatePlayerList();
         await _teamStateService.SetTeam(_players);
@@ -283,6 +284,7 @@ else
 
         playerToBeSubbedOut.Index = _toBeSubbedIn;
         playerToBeSubbedIn.Index = _toBeSubbedOut;
+        _players = await _fplRepository.GetLatestPlayerData(_players);
         _players = _players.OrderBy(i => i.Index).ToList();
         await _teamStateService.SetTeam(_players);
 

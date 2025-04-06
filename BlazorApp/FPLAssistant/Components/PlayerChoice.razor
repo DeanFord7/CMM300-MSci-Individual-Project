@@ -1,6 +1,17 @@
 ﻿@inject IDialogService DialogService
 
-<div class="player-select">
+<div class="player-select @GetAvailabilityClass()">
+    @if (PlayerData.ChanceOfPlaying != 100)
+    {
+        @if (PlayerData.News != null && PlayerData.News.ToLower().Contains("chance of playing") || PlayerData.News.ToLower().Contains("injury")) 
+        {
+            <MudText>Injured: @PlayerData.ChanceOfPlaying%</MudText>
+        }
+        else if (PlayerData.News != null && PlayerData.News.ToLower().Contains("suspended"))
+        {
+            <MudText>Suspended</MudText>
+        }
+    }
     <MudButton class="player-select" OnClick="HandlePlayerClick" Variant="Variant.Text">
         <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Large" Style="@GetIconColour(PlayerData.Team)"></MudIcon>
     </MudButton>
@@ -22,6 +33,27 @@
         align-items: center; /* Center items horizontally */
         justify-content: center; /* Center content */
         text-align: center; /* Center text */
+    }
+
+    .red-border {
+        border: 2px solid;
+        border-color: red;
+        border-radius: 5px;
+        color: red;
+    }
+
+    .orange-border {
+        border: 2px solid;
+        border-color: orange;
+        border-radius: 5px;
+        color: orange;
+    }
+
+    .yellow-border {
+        border: 2px solid;
+        border-color: yellow;
+        border-radius: 5px;
+        color: yellow;
     }
 </style>
 
@@ -118,6 +150,24 @@
                 return "color: orange"; // valid CSS color name
             default:
                 return "color: black"; // fallback color in case of an unknown team
+        }
+    }
+
+    public string GetAvailabilityClass()
+    {
+        switch(PlayerData.ChanceOfPlaying)
+        {
+            case 100:
+                return null;
+            case 75:
+                return "yellow-border";
+            case 50:
+            case 25:
+                return "orange-border";
+            case 0:
+                return "red-border";
+            default:
+                return null;
         }
     }
 }

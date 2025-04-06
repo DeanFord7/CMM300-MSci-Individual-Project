@@ -105,6 +105,7 @@ namespace FPLAssistant.Algorithms
                     .Where(p => !_currentTeam.Any(i => i.Id == p.Id)) // Not already in team
                     .Where(p => !selectedInPlayers.Contains(p.Id)) // Ensure unique PlayerIn
                     .Where(p => p.Cost <= availableBudget + (playerOut.SellingPrice * 10)) // Budget check
+                    .Where(p => p.ChanceOfPlaying != 0)
                     .OrderByDescending(p => p.PredictedScore) // Prefer highest score
                     .ToList();
 
