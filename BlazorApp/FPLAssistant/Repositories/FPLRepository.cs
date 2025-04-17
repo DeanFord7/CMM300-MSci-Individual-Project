@@ -345,6 +345,10 @@ namespace FPLAssistant.Repositories
             foreach (PlayerData player in players)
             {
                 player.PredictedScore = await GetPredictionForPlayer(player.Id);
+                if (player.ChanceOfPlaying == 0)
+                {
+                    player.PredictedScore = 0;
+                }
             }
 
             return players;
@@ -368,6 +372,14 @@ namespace FPLAssistant.Repositories
             }
 
             allPlayers = await _pythonRepository.PredictAllPlayerScores(allPlayerPrecitionData, allPlayers);
+
+            foreach (PlayerData player in allPlayers)
+            {
+                if (player.ChanceOfPlaying == 0)
+                {
+                    player.PredictedScore = 0;
+                }
+            }
 
             return allPlayers;
         }
