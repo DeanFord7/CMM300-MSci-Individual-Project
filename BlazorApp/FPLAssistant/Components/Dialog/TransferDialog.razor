@@ -1,7 +1,7 @@
 ﻿@inject FPLRepository _fplRepository
 @inject TeamStateService _teamStateService
 
-<MudDialog>
+<MudDialog style="min-width: 60%;">
     <DialogContent>
         @if (Players != null && Players.Count > 0)
         {
@@ -36,20 +36,35 @@
         }
         else if (Transfers != null && Transfers.Count > 0)
         {
+            double totalBudgetImpact = Transfers.Sum(t => t.BudgetImpact ?? 0);
             @foreach (RecommendedTransfer transfer in Transfers)
             {
                 <MudGrid>
                     <MudItem xs="4">
-                        <MudText>Out: @transfer.PlayerOut.WebName @transfer.PlayerOut.PredictedScore</MudText>
+                        <MudText Style="white-space: nowrap;" Class="mr-4">Out: @transfer.PlayerOut.WebName @transfer.PlayerOut.PredictedScore</MudText>
                     </MudItem>
                     <MudItem xs="4">
-                        <MudText>In: @transfer.PlayerIn.WebName @transfer.PlayerIn.PredictedScore</MudText>
+                        <MudText Style="white-space: nowrap;" Class="mr-4">In: @transfer.PlayerIn.WebName @transfer.PlayerIn.PredictedScore</MudText>
                     </MudItem>
                     <MudItem xs="4">
-                        <MudText>Budget: @transfer.BudgetImpact</MudText>
+                        <MudText Style="white-space: nowrap;">Budget: @FormatBudget(@transfer.BudgetImpact)</MudText>
                     </MudItem>
                 </MudGrid>
             }
+            <MudGrid Justify="Justify.FlexEnd" Class="mt-2">
+                <MudItem xs="4">
+                    <MudText Style="white-space: nowrap; font-weight: bold;">
+                        Total Budget: @FormatBudget(totalBudgetImpact)
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+            <MudGrid Justify="Justify.FlexEnd">
+                <MudItem xs="4">
+                    <MudText Style="white-space: nowrap; font-weight: bold;">
+                        Total Points: @CalculateTotal(Transfers)
+                    </MudText>
+                </MudItem>
+            </MudGrid>
         }
     </DialogContent>
     <DialogActions>
@@ -108,4 +123,40 @@
         await _teamStateService.SetBudget(Budget);
         MudDialog.Close(DialogResult.Ok(_numberOfTransfers));
     }
+
+    private string FormatBudget(double? budgetImpact)
+    {
+        if (budgetImpact == null)
+            return "N/A";
+
+        double value = budgetImpact.Value / 10;
+
+        if (value < 0)
+        {
+            return $"+ {Math.Abs(value)}m";
+        }
+        else if (value > 0)
+        {
+            return $"- {value}m";
+        }
+        else
+        {
+            return $"{value}";
+        }
+    }
+
+    private string CalculateTotal(List<RecommendedTransfer> transfers)
+    {
+        int? totalPoints = 0;
+
+        foreach (RecommendedTransfer transfer in transfers)
+        {
+            int? pointDifference = transfer.PlayerIn.PredictedScore - transfer.PlayerOut.PredictedScore;
+
+            totalPoints += pointDifference;
+        }
+
+        return $"+ {totalPoints}";
+    }
+
 }

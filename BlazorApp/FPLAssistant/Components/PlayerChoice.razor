@@ -72,6 +72,8 @@
     public EventCallback<int> PlayerSubbed { get; set; }
     [Parameter]
     public EventCallback<int> PlayerSubConfirmed { get; set; }
+    [Parameter]
+    public List<PlayerData> CurrentTeam { get; set; }
 
     public async Task HandlePlayerClick()
     {
@@ -96,10 +98,11 @@
         var parameters = new DialogParameters
             {
                 ["Value"] = PlayerData,
-                ["Position"] = Position
+                ["Position"] = Position,
+                ["CurrentTeam"] = CurrentTeam
             };
 
-        var dialog = await DialogService.ShowAsync<PlayerDialog>("Add Player", parameters, options);
+        var dialog = await DialogService.ShowAsync<PlayerDialog>("Player Management", parameters, options);
 
         var result = await dialog.Result;
 

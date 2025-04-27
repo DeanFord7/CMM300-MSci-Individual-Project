@@ -20,6 +20,31 @@ if os.path.exists(MODEL_PATH):
 else:
     print("⚠️ No pre-trained model found. Train the model first.")
 
+import pandas as pd
+
+def apply_position_weightings(df: pd.DataFrame) -> pd.DataFrame:
+    # Features to double for each position
+    features_to_weight = {
+        1: ["clean_sheets", "saves", "goals_conceded", "penalties_saved", "expected_goals_conceded"],  # Goalkeepers
+        2: ["goals_conceded", "own_goals", "clean_sheets", "expected_goals_conceded"],                 # Defenders
+        3: ["goals_scored", "assists", "expected_goals", "expected_assists", "expected_goal_involvements"],  # Midfielders
+        4: ["goals_scored", "penalties_missed", "expected_goals"]                                      # Attackers
+    }
+
+    # Make a copy to avoid modifying original
+    df_weighted = df.copy()
+
+    # Apply x2 weightings for relevant features
+    for position, feature_list in features_to_weight.items():
+        position_mask = df_weighted['position'] == position
+
+        for feature in feature_list:
+            if feature in df_weighted.columns:
+                df_weighted.loc[position_mask, feature] *= 2
+
+    return df_weighted
+
+
 @app.route('/')
 
 def basicResponse():
@@ -62,8 +87,10 @@ def train_model():
     global model
     df = pd.read_csv("FixtureData.csv")
 
-    x = df.drop(columns=["total_points"])
-    y = df["total_points"]
+    df_weighted = apply_position_weightings(df)
+
+    x = df_weighted.drop(columns=["total_points"])
+    y = df_weighted["total_points"]
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 

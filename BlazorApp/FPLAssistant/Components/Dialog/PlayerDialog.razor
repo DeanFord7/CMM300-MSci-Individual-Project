@@ -2,9 +2,20 @@
 
 <MudDialog>
     <DialogContent>
+        @if (_tooManyPlayers)
+        {
+            <MudText Color="Color.Warning">@_errorMessage</MudText>
+        }
         @if (Value != null) 
         {
-            <MudText>@Value.FirstName @Value.LastName (@Value.WebName)</MudText>    
+            <MudText>Name: @Value.FirstName @Value.LastName (@Value.WebName)</MudText>
+            <MudText>Team: @teamNames[@Value.Team]</MudText>
+            <MudText>Position: @positionNames[Value.Position]</MudText>
+            <MudText>Value: @FormatCost(Value.Cost)</MudText>
+            <MudText>Goals: @Value.Goals</MudText>
+            <MudText>Assists: @Value.Assists</MudText>
+            <MudText>TotalPoints: @Value.TotalPoints</MudText>
+
         }
         @if (_predictedScore != null)
         {
@@ -39,12 +50,46 @@
     public PlayerData Value { get; set; }
     [Parameter]
     public int Position { get; set; }
+    [Parameter]
+    public List<PlayerData> CurrentTeam { get; set; }
 
     private string _searchText = "";
     private List<PlayerData> _allPlayers = new List<PlayerData>();
     private List<PlayerData> _filteredPlayers = new List<PlayerData>();
     private bool _isTransferring = false;
     private int? _predictedScore;
+    private bool _tooManyPlayers = false;
+    private Dictionary<int, string> teamNames = new Dictionary<int, string>
+    {
+        { 1, "Arsenal" },
+        { 2, "Aston Villa" },
+        { 3, "Bournemouth" },
+        { 4, "Brentford" },
+        { 5, "Brighton & Hove Albion" },
+        { 6, "Chelsea" },
+        { 7, "Crystal Palace" },
+        { 8, "Everton" },
+        { 9, "Fulham" },
+        { 10, "Ipswich Town" },
+        { 11, "Leicester City" },
+        { 12, "Liverpool" },
+        { 13, "Manchester City" },
+        { 14, "Manchester United" },
+        { 15, "Newcastle United" },
+        { 16, "Nottingham Forest" },
+        { 17, "Southampton" },
+        { 18, "Tottenham Hotspur" },
+        { 19, "West Ham United" },
+        { 20, "Wolverhampton Wanderers" }
+    };
+    private string _errorMessage;
+    private Dictionary<int, string> positionNames = new Dictionary<int, string>
+    {
+        { 1, "Goalkeeper" },
+        { 2, "Defender" },
+        { 3, "Midfielder" },
+        { 4, "Attacker" }
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -59,6 +104,23 @@
 
     private void SelectPlayer(PlayerData player)
     {
+        int team = player.Team;
+
+        if (CurrentTeam.Where(i => i.Team == team).ToList().Count > 3)
+        {
+            _tooManyPlayers = true;
+            if (teamNames.TryGetValue(team, out string teamName))
+            {
+                _errorMessage = $"You already have 3 players from {teamName}.";
+            }
+            else
+            {
+                _errorMessage = "You already have 3 players from the same club";
+            }
+            StateHasChanged();
+            return;
+        }
+
         Value = player;
         MudDialog.Close(DialogResult.Ok(player));
     }
@@ -92,5 +154,12 @@
     private async Task GetPredictedScore()
     {
         _predictedScore = await _fplRepository.GetPredictionForPlayer(Value.Id);
+    }
+
+    public string FormatCost(int cost)
+    {
+        double decimalCost = (double)cost / 10;
+
+        return $"£{decimalCost}m";
     }
 }

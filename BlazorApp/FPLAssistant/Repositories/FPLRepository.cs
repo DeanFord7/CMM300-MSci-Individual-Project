@@ -167,10 +167,10 @@ namespace FPLAssistant.Repositories
         public async Task<History> GetPlayerAverages(FixtureData playerFixtureData)
         {
             var history = playerFixtureData.History;
+            int position = history.Select(i => i.Position).FirstOrDefault();
 
             if (history == null || history.Count == 0)
             {
-                // No history available, return default values
                 return new History
                 {
                     PlayerId = 0,
@@ -193,37 +193,19 @@ namespace FPLAssistant.Repositories
             }
 
             int count = history.Count;
-
-            double goalsScored = (double)history.Average(h => h.GoalsScored);
-
             History predictedMatchHistory = new History
             {
-                PlayerId = history.First().PlayerId,  // Keep the same player ID
+                PlayerId = history.First().PlayerId,
                 Fixture = playerFixtureData.Fixtures.FirstOrDefault()?.Id ?? 0,
                 OpponentTeam = playerFixtureData.Fixtures.FirstOrDefault()?.TeamAway ?? 0,
                 WasHome = playerFixtureData.Fixtures.FirstOrDefault()?.IsHome ?? true,
             };
 
-            double totalMinutes = 0;
-            double totalGoals = 0;
-            double totalAssists = 0;
-            double totalGoalsConceded = 0;
-            double totalOwnGoals = 0;
-            double totalPenaltiesSaved = 0;
-            double totalPenaltiesMissed = 0;
-            double totalYellowCards = 0;
-            double totalRedCards = 0;
-            double totalSaves = 0;
-            double totalBonus = 0;
-            double totalBonusPoints = 0;
-            double totalInfluence = 0;
-            double totalCreativity = 0;
-            double totalThreat = 0;
-            double totalICT = 0;
-            double totalXG = 0;
-            double totalXA = 0;
-            double totalXGI = 0;
-            double totalXGC = 0;
+            double totalMinutes = 0, totalGoals = 0, totalAssists = 0, totalGoalsConceded = 0;
+            double totalOwnGoals = 0, totalPenaltiesSaved = 0, totalPenaltiesMissed = 0;
+            double totalYellowCards = 0, totalRedCards = 0, totalSaves = 0, totalBonus = 0, totalBonusPoints = 0;
+            double totalInfluence = 0, totalCreativity = 0, totalThreat = 0, totalICT = 0;
+            double totalXG = 0, totalXA = 0, totalXGI = 0, totalXGC = 0;
 
             foreach (var item in history)
             {
@@ -237,63 +219,70 @@ namespace FPLAssistant.Repositories
                 double.TryParse(item.ExpectedGoalInvolvements, out double expectedGoalInvolvements);
                 double.TryParse(item.ExpectedGoalsConceded, out double expectedGoalsConceded);
 
-                if (index >= history.Count - 5)
+                // Base weighting: double last 5 matches
+                double matchWeight = index >= history.Count - 5 ? 2.0 : 1.0;
+
+                // Apply positional weighting
+                double goalsMultiplier = 1.0, assistsMultiplier = 1.0, cleanSheetsMultiplier = 1.0;
+                double savesMultiplier = 1.0, goalsConcededMultiplier = 1.0, ownGoalsMultiplier = 1.0;
+                double penaltiesSavedMultiplier = 1.0, penaltiesMissedMultiplier = 1.0;
+                double xgMultiplier = 1.0, xaMultiplier = 1.0, xgiMultiplier = 1.0, xgcMultiplier = 1.0;
+
+                if (position == 1) // Goalkeeper
                 {
-                    totalMinutes += (double)item.Minutes * 2;
-                    totalGoals += (double)item.GoalsScored * 2;
-                    totalAssists += (double)item.Assists * 2;
-                    totalGoalsConceded += (double)item.GoalsConceded * 2;
-                    totalOwnGoals += (double)item.OwnGoals * 2;
-                    totalPenaltiesSaved += (double)item.PenaltiesSaved * 2;
-                    totalPenaltiesMissed += (double)item.PenaltiesMissed * 2;
-                    totalYellowCards += (double)item.YellowCards * 2;
-                    totalRedCards += (double)item.RedCards * 2;
-                    totalSaves += (double)item.Saves * 2;
-                    totalBonus += (double)item.Bonus * 2;
-                    totalBonusPoints += (double)item.BonusPoints * 2;
-                    totalInfluence += (double)influence * 2;
-                    totalCreativity += (double)creativity * 2;
-                    totalThreat += (double)threat * 2;
-                    totalICT += (double)ictIndex * 2;
-                    totalXG += (double)expectedGoals * 2;
-                    totalXA += (double)expectedAssists * 2;
-                    totalXGI += (double)expectedGoalInvolvements * 2;
-                    totalXGC += (double)expectedGoalsConceded * 2;
+                    cleanSheetsMultiplier = 2.0;
+                    savesMultiplier = 2.0;
+                    goalsConcededMultiplier = 2.0;
+                    penaltiesSavedMultiplier = 2.0;
+                    xgcMultiplier = 2.0;
                 }
-                else
+                else if (position == 2) // Defender
                 {
-                    totalMinutes += (double)item.Minutes;
-                    totalGoals += (double)item.GoalsScored;
-                    totalAssists += (double)item.Assists;
-                    totalGoalsConceded += (double)item.GoalsConceded;
-                    totalOwnGoals += (double)item.OwnGoals;
-                    totalPenaltiesSaved += (double)item.PenaltiesSaved;
-                    totalPenaltiesMissed += (double)item.PenaltiesMissed;
-                    totalYellowCards += (double)item.YellowCards;
-                    totalRedCards += (double)item.RedCards;
-                    totalSaves += (double)item.Saves;
-                    totalBonus += (double)item.Bonus;
-                    totalBonusPoints += (double)item.BonusPoints;
-                    totalInfluence += (double)influence;
-                    totalCreativity += (double)creativity;
-                    totalThreat += (double)threat;
-                    totalICT += (double)ictIndex;
-                    totalXG += (double)expectedGoals;
-                    totalXA += (double)expectedAssists;
-                    totalXGI += (double)expectedGoalInvolvements;
-                    totalXGC += (double)expectedGoalsConceded;
+                    cleanSheetsMultiplier = 2.0;
+                    goalsConcededMultiplier = 2.0;
+                    ownGoalsMultiplier = 2.0;
+                    xgcMultiplier = 2.0;
                 }
+                else if (position == 3) // Midfielder
+                {
+                    goalsMultiplier = 2.0;
+                    assistsMultiplier = 2.0;
+                    xgMultiplier = 2.0;
+                    xaMultiplier = 2.0;
+                    xgiMultiplier = 2.0;
+                }
+                else if (position == 4) // Forward
+                {
+                    goalsMultiplier = 2.0;
+                    penaltiesMissedMultiplier = 2.0;
+                    xgMultiplier = 2.0;
+                }
+
+                totalMinutes += (double)item.Minutes * matchWeight;
+                totalGoals += (double)item.GoalsScored * matchWeight * goalsMultiplier;
+                totalAssists += (double)item.Assists * matchWeight * assistsMultiplier;
+                totalGoalsConceded += (double)item.GoalsConceded * matchWeight * goalsConcededMultiplier;
+                totalOwnGoals += (double)item.OwnGoals * matchWeight * ownGoalsMultiplier;
+                totalPenaltiesSaved += (double)item.PenaltiesSaved * matchWeight * penaltiesSavedMultiplier;
+                totalPenaltiesMissed += (double)item.PenaltiesMissed * matchWeight * penaltiesMissedMultiplier;
+                totalYellowCards += (double)item.YellowCards * matchWeight;
+                totalRedCards += (double)item.RedCards * matchWeight;
+                totalSaves += (double)item.Saves * matchWeight * savesMultiplier;
+                totalBonus += (double)item.Bonus * matchWeight;
+                totalBonusPoints += (double)item.BonusPoints * matchWeight;
+                totalInfluence += influence * matchWeight;
+                totalCreativity += creativity * matchWeight;
+                totalThreat += threat * matchWeight;
+                totalICT += ictIndex * matchWeight;
+                totalXG += expectedGoals * matchWeight * xgMultiplier;
+                totalXA += expectedAssists * matchWeight * xaMultiplier;
+                totalXGI += expectedGoalInvolvements * matchWeight * xgiMultiplier;
+                totalXGC += expectedGoalsConceded * matchWeight * xgcMultiplier;
             }
 
             int totalMatches = history.Count;
-            if (totalMinutes / totalMinutes > 90)
-            {
-                predictedMatchHistory.Minutes = 90;
-            }
-            else
-            {
-                predictedMatchHistory.Minutes = (int)(totalMinutes / totalMatches);
-            }
+
+            predictedMatchHistory.Minutes = (int)(totalMinutes / totalMatches);
             predictedMatchHistory.GoalsScored = totalGoals / totalMatches;
             predictedMatchHistory.Assists = totalAssists / totalMatches;
             predictedMatchHistory.GoalsConceded = totalGoalsConceded / totalMatches;
@@ -316,6 +305,7 @@ namespace FPLAssistant.Repositories
 
             return predictedMatchHistory;
         }
+
 
         public async Task<List<PlayerData>> GetAllPlayers()
         {
