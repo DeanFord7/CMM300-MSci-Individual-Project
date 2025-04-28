@@ -18,7 +18,7 @@
             {
                 @if (goalkeeper.Index < 11)
                 {
-                        <PlayerChoice PlayerData="goalkeeper" Index="goalkeeper.Index" Position="1" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed" CurrentTeam="_players"></PlayerChoice>
+                        <PlayerChoice PlayerData="goalkeeper" Index="goalkeeper.Index" Position="1" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed" CurrentTeam="_players" PlayerBeingSubstituted="_beingSubstituted"></PlayerChoice>
                 }
             }
             @if (_goalKeepers.Count < 2 && !_goalKeepers.Any(i => i.Index == 0) && _players.Count < 15)
@@ -31,7 +31,7 @@
             {
                 @if (defender.Index <= 11)
                 {
-                        <PlayerChoice PlayerData="defender" Index="defender.Index" Position="2" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed" CurrentTeam="_players"></PlayerChoice>
+                        <PlayerChoice PlayerData="defender" Index="defender.Index" Position="2" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed" CurrentTeam="_players" PlayerBeingSubstituted="_beingSubstituted"></PlayerChoice>
                 }
             }
             @for (int i = 1; i < 5; i++)
@@ -49,7 +49,7 @@
             {
                 @if (midfielder.Index <= 11)
                 {
-                        <PlayerChoice PlayerData="midfielder" Index="midfielder.Index" Position="3" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed" CurrentTeam="_players"></PlayerChoice>
+                        <PlayerChoice PlayerData="midfielder" Index="midfielder.Index" Position="3" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed" CurrentTeam="_players" PlayerBeingSubstituted="_beingSubstituted"></PlayerChoice>
                 }
             }
             @for (int i = 5; i < 9; i++)
@@ -67,7 +67,7 @@
             {
                 @if (attacker.Index <= 11)
                 {
-                        <PlayerChoice PlayerData="attacker" Index="attacker.Index" Position="4" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed" CurrentTeam="_players"></PlayerChoice>
+                        <PlayerChoice PlayerData="attacker" Index="attacker.Index" Position="4" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed" CurrentTeam="_players" PlayerBeingSubstituted="_beingSubstituted"></PlayerChoice>
                 }
             }
             @for (int i = 9; i < 11; i++)
@@ -87,7 +87,7 @@
             {
                 @foreach (PlayerData substitute in _players.Where(i => i.Index >= 11))
                 {
-                    <PlayerChoice PlayerData="substitute" Index="substitute.Index" Position="substitute.Position" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed" CurrentTeam="_players"></PlayerChoice>
+                        <PlayerChoice PlayerData="substitute" Index="substitute.Index" Position="substitute.Position" IsSubstituting="_isSubstituting" OnPlayerSelected="HandlePlayerSelected" PlayerSubbed="HandleSubstitution" PlayerSubConfirmed="HandleSubConfirmed" CurrentTeam="_players" PlayerBeingSubstituted="_beingSubstituted"></PlayerChoice>
                 }
             }
             @for (int i = 11; i < 15; i++)
@@ -199,6 +199,7 @@ else
     double _baseBudget = 1000;
     double _budgetRemaining;
     string _teamName = "Your Fantasy Team";
+    PlayerData _beingSubstituted;
 
     protected override async Task OnInitializedAsync()
     {
@@ -272,11 +273,14 @@ else
     {
         _toBeSubbedOut = toBeSubbedOut;
         _isSubstituting = true;
+        _beingSubstituted = _players.Where(i => i.Index == toBeSubbedOut).FirstOrDefault();
         StateHasChanged();
     }
 
     private async Task HandleSubConfirmed(int toBeSubbedIn)
     {
+        _loading = true;
+        StateHasChanged();
         _isSubstituting = false;
         _toBeSubbedIn = toBeSubbedIn;
         PlayerData playerToBeSubbedOut = _players.Where(i => i.Index == _toBeSubbedOut).FirstOrDefault();
@@ -287,7 +291,8 @@ else
         _players = await _fplRepository.GetLatestPlayerData(_players);
         _players = _players.OrderBy(i => i.Index).ToList();
         await _teamStateService.SetTeam(_players);
-
+        await UpdatePlayerList();
+        _loading = false;
         StateHasChanged();
     }
 

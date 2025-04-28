@@ -55,6 +55,13 @@
         border-radius: 5px;
         color: yellow;
     }
+
+    .green-border {
+        border: 2px solid;
+        border-color: green;
+        border-radius: 5px;
+        color: green;
+    }
 </style>
 
 @code {
@@ -74,11 +81,33 @@
     public EventCallback<int> PlayerSubConfirmed { get; set; }
     [Parameter]
     public List<PlayerData> CurrentTeam { get; set; }
+    [Parameter]
+    public PlayerData PlayerBeingSubstituted { get; set; }
 
     public async Task HandlePlayerClick()
     {
         if (IsSubstituting)
         {
+            List<PlayerData> goalkeepers = CurrentTeam.Where(i => i.Position == 1 && i.Index < 11).ToList();
+            List<PlayerData> defenders = CurrentTeam.Where(i => i.Position == 2 && i.Index < 11).ToList();
+            List<PlayerData> midfielders = CurrentTeam.Where(i => i.Position == 3 && i.Index < 11).ToList();
+            List<PlayerData> attackers = CurrentTeam.Where(i => i.Position == 4 && i.Index < 11).ToList();
+
+            if (PlayerBeingSubstituted.Index < 11 && PlayerData.Index >= 11)
+            {
+                if (!IsFormationValidAfterSwap(PlayerBeingSubstituted, PlayerData, defenders, midfielders, attackers))
+                {
+                    return;
+                }
+            }
+            else if (PlayerBeingSubstituted.Index >= 11 && PlayerData.Index < 11)
+            {
+                if (!IsFormationValidAfterSwap(PlayerData, PlayerBeingSubstituted, defenders, midfielders, attackers))
+                {
+                    return;
+                }
+            }
+
             await PlayerSubConfirmed.InvokeAsync(Index);
         }
         else
@@ -158,19 +187,110 @@
 
     public string GetAvailabilityClass()
     {
-        switch(PlayerData.ChanceOfPlaying)
+        if (!IsSubstituting)
         {
-            case 100:
+            switch (PlayerData.ChanceOfPlaying)
+            {
+                case 100:
+                    return null;
+                case 75:
+                    return "yellow-border";
+                case 50:
+                case 25:
+                    return "orange-border";
+                case 0:
+                    return "red-border";
+                default:
+                    return null;
+            }
+        }
+        else
+        {
+            if (PlayerBeingSubstituted == null)
+            {
                 return null;
-            case 75:
-                return "yellow-border";
-            case 50:
-            case 25:
-                return "orange-border";
-            case 0:
-                return "red-border";
-            default:
-                return null;
+            }
+            else
+            {
+                List<PlayerData> goalkeepers = CurrentTeam.Where(i => i.Position == 1 && i.Index < 11).ToList();
+                List<PlayerData> defenders = CurrentTeam.Where(i => i.Position == 2 && i.Index < 11).ToList();
+                List<PlayerData> midfielders = CurrentTeam.Where(i => i.Position == 3 && i.Index < 11).ToList();
+                List<PlayerData> attackers = CurrentTeam.Where(i => i.Position == 4 && i.Index < 11).ToList();
+                if (PlayerBeingSubstituted.Index < 11 && PlayerData.Index >= 11)
+                {
+                    if (PlayerBeingSubstituted.Position == PlayerData.Position)
+                    {
+                        return "green-border";
+                    }
+
+                    if (PlayerBeingSubstituted.Position == 1)
+                    {
+                        return null;
+                    }
+
+                    if (PlayerData.Position == 1)
+                    {
+                        return null;
+                    }
+
+                    if (IsFormationValidAfterSwap(PlayerBeingSubstituted, PlayerData, defenders, midfielders, attackers))
+                    {
+                        return "green-border";
+                    }
+
+                    return null;
+                }
+                else if (PlayerBeingSubstituted.Index >= 11 && PlayerData.Index < 11)
+                {
+                    if (PlayerBeingSubstituted.Position == PlayerData.Position)
+                    {
+                        return "green-border";
+                    }
+
+                    if (PlayerBeingSubstituted.Position == 1)
+                    {
+                        return null;
+                    }
+
+                    if (PlayerData.Position == 1)
+                    {
+                        return null;
+                    }
+
+                    if (IsFormationValidAfterSwap(PlayerData, PlayerBeingSubstituted, defenders, midfielders, attackers))
+                    {
+                        return "green-border";
+                    }
+
+                    return null;
+                }
+                else
+                {
+                    return null;
+                }
+            }
         }
     }
+
+    private bool IsFormationValidAfterSwap(PlayerData starter, PlayerData substitute, List<PlayerData> defenders, List<PlayerData> midfielders, List<PlayerData> attackers)
+    {
+        // Count players by position AFTER the swap
+        int defenderCount = defenders.Count;
+        int midfielderCount = midfielders.Count;
+        int attackerCount = attackers.Count;
+
+        // Remove the player being subbed out
+        if (starter.Position == 2) defenderCount--;
+        if (starter.Position == 3) midfielderCount--;
+        if (starter.Position == 4) attackerCount--;
+
+        // Add the new player coming in
+        if (substitute.Position == 2) defenderCount++;
+        if (substitute.Position == 3) midfielderCount++;
+        if (substitute.Position == 4) attackerCount++;
+
+        // Now check if at least 3 defenders, 3 midfielders, and 1 attacker remain
+        return defenderCount >= 3 && midfielderCount >= 3 && attackerCount >= 1;
+    }
+
 }
