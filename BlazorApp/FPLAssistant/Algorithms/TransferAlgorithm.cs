@@ -155,11 +155,13 @@ namespace FPLAssistant.Algorithms
                     return double.MinValue;
                 }
 
+                // Check if player's team already exists in the list of counts
                 if (!teamCounts.ContainsKey(transfer.PlayerIn.Team))
                 {
                     teamCounts[transfer.PlayerIn.Team] = 0;
                 }
 
+                // If adding player would give the team a fourth player from one team, set the fitness to the min value as this is an unfit solution
                 if (teamCounts[transfer.PlayerIn.Team] > 3)
                 {
                     return double.MinValue;

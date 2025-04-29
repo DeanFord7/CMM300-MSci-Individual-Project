@@ -219,7 +219,7 @@ namespace FPLAssistant.Repositories
                 double.TryParse(item.ExpectedGoalInvolvements, out double expectedGoalInvolvements);
                 double.TryParse(item.ExpectedGoalsConceded, out double expectedGoalsConceded);
 
-                // Base weighting: double last 5 matches
+                // Apply weighting to more recent games for form
                 double matchWeight = index >= history.Count - 5 ? 2.0 : 1.0;
 
                 // Apply positional weighting
@@ -282,6 +282,7 @@ namespace FPLAssistant.Repositories
 
             int totalMatches = history.Count;
 
+            // Get the averages
             predictedMatchHistory.Minutes = (int)(totalMinutes / totalMatches);
             predictedMatchHistory.GoalsScored = totalGoals / totalMatches;
             predictedMatchHistory.Assists = totalAssists / totalMatches;
@@ -306,7 +307,10 @@ namespace FPLAssistant.Repositories
             return predictedMatchHistory;
         }
 
-
+        /// <summary>
+        /// Get a list of all players from the API
+        /// </summary>
+        /// <returns></returns>
         public async Task<List<PlayerData>> GetAllPlayers()
         {
             BootStrapAPIResponse bootStrapAPIResponse = await GetBootStrapAPIResponse();
@@ -314,6 +318,11 @@ namespace FPLAssistant.Repositories
             return bootStrapAPIResponse.Elements.OrderBy(i => i.FirstName).ThenBy(i => i.LastName).ToList();
         }
 
+        /// <summary>
+        /// Get the latest data for players in the users team
+        /// </summary>
+        /// <param name="playerData"></param>
+        /// <returns></returns>
         public async Task<List<PlayerData>> GetLatestPlayerData(List<PlayerData> playerData)
         {
 
@@ -330,6 +339,11 @@ namespace FPLAssistant.Repositories
             return updatedPlayerData;
         }
 
+        /// <summary>
+        /// Predict scores for the users team
+        /// </summary>
+        /// <param name="players"></param>
+        /// <returns></returns>
         public async Task<List<PlayerData>> PredictTeamScores(List<PlayerData> players)
         {
             foreach (PlayerData player in players)
@@ -344,6 +358,10 @@ namespace FPLAssistant.Repositories
             return players;
         }
 
+        /// <summary>
+        /// Get predictions for every player in FPL
+        /// </summary>
+        /// <returns></returns>
         public async Task<List<PlayerData>> PredictAllPlayers()
         {
             List<PlayerData> allPlayers = await GetAllPlayers();
@@ -374,6 +392,11 @@ namespace FPLAssistant.Repositories
             return allPlayers;
         }
 
+        /// <summary>
+        /// Recommend transfers to the user
+        /// </summary>
+        /// <param name="numberOftransfers"></param>
+        /// <returns></returns>
         public async Task<List<RecommendedTransfer>> RecommendTransfers(int numberOftransfers)
         {
             List<RecommendedTransfer> recommendedTransfers = new List<RecommendedTransfer>();

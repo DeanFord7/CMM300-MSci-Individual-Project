@@ -2,8 +2,8 @@ from flask import Flask, jsonify, request
 import csv
 import numpy as np
 import pandas as pd
-import joblib  # Use joblib for saving/loading models
-import os  # To check if file exists
+import joblib 
+import os 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import root_mean_squared_error
@@ -11,7 +11,7 @@ from sklearn.metrics import root_mean_squared_error
 app = Flask(__name__)
 
 model = None
-MODEL_PATH = "trained_model.pkl"  # Path to save/load the model
+MODEL_PATH = "trained_model.pkl" 
 
 
 if os.path.exists(MODEL_PATH):
@@ -44,12 +44,6 @@ def apply_position_weightings(df: pd.DataFrame) -> pd.DataFrame:
 
     return df_weighted
 
-
-@app.route('/')
-
-def basicResponse():
-    return 'This is a message from the python backend'
-
 @app.route('/create_csv', methods=['POST'])
 
 def create_csv():
@@ -60,14 +54,14 @@ def create_csv():
     with open(csv_file_path, mode='w', newline='') as file:
         writer = csv.writer(file)
         
-        # Write the header (you should adjust based on your data fields)
+        # Write the header
         writer.writerow(["element", "fixture", "opponent_team", "total_points", "was_home", "team_h_score", "team_a_score", 
           "minutes", "goals_scored", "assists", "clean_sheets", "goals_conceded", "own_goals", 
           "penalties_saved", "penalties_missed", "yellow_cards", "red_cards", "saves", "bonus", "bps", 
           "influence", "creativity", "threat", "ict_index", "starts", "expected_goals", "expected_assists", 
           "expected_goal_involvements", "expected_goals_conceded", "position"])
 
-        # Write each history entry (ensure the keys match the property names in the data)
+        # Write each history entry
         for history in data:
             print(history)
             writer.writerow([history['element'], history['fixture'], history['opponent_team'], history['total_points'], 
@@ -79,7 +73,6 @@ def create_csv():
                                 history['ict_index'], history['starts'], history['expected_goals'], history['expected_assists'], 
                                 history['expected_goal_involvements'], history['expected_goals_conceded'], history['position']])
 
-    # Return a response back to Blazor indicating success
     return jsonify({"message": "CSV created successfully", "filePath": csv_file_path}), 200
 
 @app.route("/train_model", methods=["GET"])
@@ -87,21 +80,27 @@ def train_model():
     global model
     df = pd.read_csv("FixtureData.csv")
 
+    # Apply the weightings based on a players position
     df_weighted = apply_position_weightings(df)
 
     x = df_weighted.drop(columns=["total_points"])
     y = df_weighted["total_points"]
 
+    # Split into train test split
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
+    # Initailise and fit the random forest model
     model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(x_train, y_train)
 
+    # Make predictions on the testing data
     y_pred = model.predict(x_test)
 
+    # Calculate the root mean squared error of the predictions
     rmse = root_mean_squared_error(y_test, y_pred)
     print(f"RMSE: {rmse:.4f}")
 
+    # Save the model
     joblib.dump(model, MODEL_PATH)
     print(f"✅ Model saved to {MODEL_PATH}")
 
@@ -110,21 +109,21 @@ def train_model():
 @app.route('/predict_player_score', methods=['POST'])
 def predict_player_score():
     global model
-    print("Endpoint reached")
+    # Load the existing model if it exists
     if model is None:
         if os.path.exists(MODEL_PATH):
-            model = joblib.load(MODEL_PATH)  # Try loading saved model
+            model = joblib.load(MODEL_PATH)
             print("✅ Model loaded from file.")
         else:
             print("❌ No model available.")
             return jsonify({"error": "Model not trained yet"}), 400
     
     input_data = request.get_json()
-    print(input_data)
     df_input = pd.DataFrame([input_data])
 
     df_input = df_input.drop(columns=["total_points"])
 
+    # Make a prediction on the input data
     prediction = model.predict(df_input)
 
     return jsonify(prediction.tolist())
@@ -133,10 +132,10 @@ def predict_player_score():
 def predict_all_players():
     global model
     print("Predicting all players")
-
+    # Get the model if it exists
     if model is None:
         if os.path.exists(MODEL_PATH):
-            model = joblib.load(MODEL_PATH)  # Try loading saved model
+            model = joblib.load(MODEL_PATH)
             print("✅ Model loaded from file.")
         else:
             print("❌ No model available.")
@@ -150,9 +149,10 @@ def predict_all_players():
     if "total_points" in df_input.columns:
         df_input = df_input.drop(columns=["total_points"])
 
+    # Get predictions for all players
     predictions = model.predict(df_input)
 
-    # Construct response: each prediction is linked to a player
+    # Format the data to return to the front end
     response_data = [
         {"id": player["element"], "predicted_score": float(score)}
         for player, score in zip(input_data, predictions)

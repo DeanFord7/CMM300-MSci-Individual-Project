@@ -13,7 +13,6 @@ namespace FPLAssistant.Repositories
 {
     public interface IPythonRepository
     {
-        Task<string> SendMessage();
         Task<bool> GenerateCsv(List<History> fixtureHistory);
         Task<bool> TrainModel();
         Task<int?> PredictPlayerScore(History upcomingFixtureData);
@@ -29,23 +28,11 @@ namespace FPLAssistant.Repositories
             _httpClient = httpClient;
         }
 
-        public async Task<string> SendMessage()
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync(flaskUrl);
-
-                var responseContent = await response.Content.ReadAsStringAsync();
-
-                return responseContent;
-            }
-            catch (HttpRequestException ex)
-            {
-                Console.WriteLine(ex.Message);
-                return null;
-            }
-        }
-
+        /// <summary>
+        /// Generate a CSV on the latest data
+        /// </summary>
+        /// <param name="fixtureHistory"></param>
+        /// <returns></returns>
         public async Task<bool> GenerateCsv(List<History> fixtureHistory)
         {
             var url = flaskUrl + "create_csv";
@@ -68,6 +55,10 @@ namespace FPLAssistant.Repositories
             }
         }
 
+        /// <summary>
+        /// Re-train the machine learning model
+        /// </summary>
+        /// <returns></returns>
         public async Task<bool> TrainModel()
         {
             var url = flaskUrl + "train_model";
@@ -88,11 +79,14 @@ namespace FPLAssistant.Repositories
             }
         }
 
+        /// <summary>
+        /// Get predictions for an individual player
+        /// </summary>
+        /// <param name="upcomingFixtureData"></param>
+        /// <returns></returns>
         public async Task<int?> PredictPlayerScore(History upcomingFixtureData)
         {
             var url = flaskUrl + "predict_player_score";
-
-            //var jsonContent = new StringContent(JsonSerializer.Serialize(upcomingFixtureData), Encoding.UTF8, "application/json");
 
             var serializedData = JsonSerializer.Serialize(upcomingFixtureData);
             Console.WriteLine(serializedData);  // Check the structure of the JSON you're sending
@@ -123,6 +117,12 @@ namespace FPLAssistant.Repositories
             }
         }
 
+        /// <summary>
+        /// Get predictions for all players
+        /// </summary>
+        /// <param name="playerData"></param>
+        /// <param name="bootstrapResponse"></param>
+        /// <returns></returns>
         public async Task<List<PlayerData>> PredictAllPlayerScores(List<History> playerData, List<PlayerData> bootstrapResponse)
         {
             var url = flaskUrl + "predict_all_player_scores";
