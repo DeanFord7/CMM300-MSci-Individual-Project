@@ -53,19 +53,6 @@
         return $"£{decimalCost}m";
     }
 
-    public async Task<bool> QueryPythonBackend()
-    {
-        string responseMessage = await _pythonRepository.SendMessage();
-
-        if (responseMessage != null)
-        {
-            message = responseMessage;
-            await InvokeAsync(StateHasChanged);
-            return true;
-        }
-        return false;
-    }
-
     public string GetPlayerPosition(PlayerData playerData)
     {
         switch (playerData.Position)
